@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-
+from datetime import timedelta 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -31,13 +31,18 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-]
+    'rest_framework',
+    'django_filters',
+    'rest_framework_simplejwt.token_blacklist',
+    'monitor'
+]   
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -53,18 +58,21 @@ ROOT_URLCONF = 'devpulse_backend.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],  #Add this so Django finds our dashboard.html
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
+
+ASGI_APPLICATION = "devpulse_backend.asgi.application"
 
 WSGI_APPLICATION = 'devpulse_backend.wsgi.application'
 
@@ -74,10 +82,55 @@ WSGI_APPLICATION = 'devpulse_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'devpulse_db',
+        'USER':'devpulse_user',
+        'PASSWORD':'devpulse_pass123',
+        'HOST':'127.0.0.1',
+        'PORT':'5432'
     }
 }
+
+REST_FRAMEWORK ={
+    "DEFAULT_AUTHENTICATION_CLASSES":[
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    
+    'DEFAULT_PERMISSION_CLASSES': (
+        # This keeps your views secure by default
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+
+    # Automatically paginate large result sets (max 20 items per page)
+    "DEFAULT_PAGINATION_CLASS":"rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE":20,
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    'SLIDING_TOKEN_LIFETIME': timedelta(days=30),
+    'SLIDING_TOKEN_REFRESH_LIFETIME_LATE_USER': timedelta(days=1),
+    'SLIDING_TOKEN_LIFETIME_LATE_USER': timedelta(days=30),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+CHANNEL_LAYERS={
+    "default":{
+        "BACKEND":"channels_redis.core.RedisChannelLayer",
+        "CONFIG":{
+            "hosts":[("127.0.0.1",6379)],
+        },
+    },
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"       # Where Celery looks for new tasks
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"   # Where Celery stores task results
+CELERY_ACCEPT_CONTENT = ["json"]                       # Only accept JSON-formatted tasks
+CELERY_TASK_SERIALIZER = "json"                        # Serialize task arguments as JSON
+CELERY_RESULT_SERIALIZER = "json"                      # Serialize task results as JSON
+CELERY_TIMEZONE = "UTC"                                # Match our database timezone
 
 
 # Password validation
