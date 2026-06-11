@@ -8,11 +8,22 @@ from .tasks import send_critical_alert_notification
 @receiver(post_save,sender=ActivityLog)
 
 def on_activity_log(sender,instance,created,**kwargs):
+    """
+    This function runs AUTOMATICALLY every time a new ActivityLog is saved.
+    You never call this function directly — Django calls it for you.
+    Parameters:
+    - sender: The model that triggered the signal (ActivityLog)
+    - instance: The actual log row that was just saved
+    - created: True if this is a brand new row, False if an existing row was updated
+    """
+    # Only react to NEW logs, not edits to existing ones
     if not created:
         return
     
+    # --- PART 1: Send the new log to all dashboard browsers ---
     channel_layer =get_channel_layer()
 
+    # Build a simple dictionary with the data we want to send
     log_data={                                                                                                                      
         "event_type":instance.event_type,
         "severity":instance.severity,
@@ -21,6 +32,7 @@ def on_activity_log(sender,instance,created,**kwargs):
         "timestamp":instance.created_at.isoformat(),
     } 
 
+    # Send it to the "live_feed" group (all connected browsers)
     async_to_sync(channel_layer.group_send)(
         "live_feed",
         {
@@ -29,10 +41,11 @@ def on_activity_log(sender,instance,created,**kwargs):
         },
     )
 
-
+     # --- PART 2: If it's a CRITICAL event, create an alert and notify ---
     if instance.severity == "CRITICAL":
-        SystemAlert.objects.create(activity_log=instance)
+        SystemAlert.objects.create(activity_log=instance)   # Create a SystemAlert row in the database
 
+          # Trigger the Celery background task
         send_critical_alert_notification.delay(
             event_type=instance.event_type,
             message=instance.payload.get("message","No details provided.")

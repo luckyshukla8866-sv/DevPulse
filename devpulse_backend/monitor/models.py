@@ -4,7 +4,12 @@ from django.contrib.auth.models import User
 
 #    Create your models here.
 class Integration(models.Model):
+    """
+    Stores which external tools are connected to DevPulse.
+    Example: "My GitHub Repository" with platform type "GITHUB"
+    """
 
+    # These are the only allowed platform types
     class PlatformChoices(models.TextChoices):
         GITHUB="GITHUB","GitHub"
         JIRA="JIRA","Jira"
@@ -22,7 +27,10 @@ class Integration(models.Model):
 
 
 class ActivityLog(models.Model):
-
+    """
+    Every webhook event creates one row here.
+    This is the main "history book" of all engineering activity.
+    """
     class SeverityChoices(models.TextChoices):
         INFO="INFO","Info"
         WARNING="WARNING","Warning"
@@ -42,6 +50,11 @@ class ActivityLog(models.Model):
 
 
 class SystemAlert(models.Model):
+    """
+    Created automatically when a CRITICAL event arrives.
+    Tracks whether the emergency has been resolved.
+    """
+
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     activity_log=models.OneToOneField(ActivityLog,on_delete=models.CASCADE,related_name="alert")
     is_resolved=models.BooleanField(default=False)
@@ -51,6 +64,10 @@ class SystemAlert(models.Model):
         return f"Alert for {self.activity_log.event_type}"
 
 class PasswordResetToken(models.Model):
+    """
+    Stores password reset tokens in the database.
+    Each row = one forgot-password request.
+    """
     token = models.UUIDField(default=uuid.uuid4, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
