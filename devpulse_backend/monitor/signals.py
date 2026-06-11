@@ -11,15 +11,24 @@ def on_activity_log(sender,instance,created,**kwargs):
     if not created:
         return
     
-    channel=get_channel_layer()
+    channel_layer =get_channel_layer()
 
-    log_data={
+    log_data={                                                                                                                      
         "event_type":instance.event_type,
         "severity":instance.severity,
         "message":instance.payload.get("message"),
         "integration":instance.integration.name,
         "timestamp":instance.created_at.isoformat(),
     } 
+
+    async_to_sync(channel_layer.group_send)(
+        "live_feed",
+        {
+            "type": "new_activity",    
+            "data": log_data,
+        },
+    )
+
 
     if instance.severity == "CRITICAL":
         SystemAlert.objects.create(activity_log=instance)

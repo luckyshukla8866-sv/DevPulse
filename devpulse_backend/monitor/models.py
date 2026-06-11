@@ -29,7 +29,7 @@ class ActivityLog(models.Model):
         CRITICAL="CRITICAL","Critical"
 
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
-    integration=models.ForeignKey(Integration,on_delete=models.CASCADE,related_name="activity_log")
+    integration=models.ForeignKey(Integration,on_delete=models.CASCADE,related_name="activity_logs")
     event_type=models.CharField(max_length=100,help_text="PULL_REQUEST_OPENED, SERVER_CRASH")
     severity=models.CharField(max_length=100,choices=SeverityChoices.choices,default=SeverityChoices.INFO)
     payload=models.JSONField(default=dict,help_text="Raw JSON data from external tool")
@@ -44,7 +44,7 @@ class ActivityLog(models.Model):
 class SystemAlert(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     activity_log=models.OneToOneField(ActivityLog,on_delete=models.CASCADE,related_name="alert")
-    is_resolved=models.BooleanField(default=True)
+    is_resolved=models.BooleanField(default=False)
     resolved_at =models.DateTimeField(null=True,blank=True)
 
     def __str__(self):

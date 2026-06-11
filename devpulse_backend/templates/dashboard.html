@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DevPulse Live Feed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            padding: 20px;
+        }
+        h1 { color: #38bdf8; }
+        #status { color: gray; margin-bottom: 20px; }
+
+        .event {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid gray;
+            background: #1e293b;
+        }
+        .INFO     { border-left-color: #38bdf8; }
+        .WARNING  { border-left-color: #facc15; }
+        .CRITICAL { border-left-color: #ef4444; background: #2d1215; }
+    </style>
+</head>
+<body>
+    <h1>⚡ DevPulse Live Feed</h1>
+    <p id="status">Connecting...</p>
+    <div id="feed"></div>
+
+    <script>
+        var feed = document.getElementById("feed");
+        var statusText = document.getElementById("status");
+
+        var ws = new WebSocket("ws://" + window.location.host + "/ws/live/feed/");
+
+        ws.onopen = function() {
+            statusText.textContent = "🟢 Connected to Live Feed!";
+        };
+
+        ws.onclose = function() {
+            statusText.textContent = "🔴 Disconnected. Refresh to reconnect.";
+        };
+
+        ws.onmessage = function(e) {
+            var data = JSON.parse(e.data);
+
+            var card = document.createElement("div");
+            card.className = "event " + data.severity;
+
+            card.innerHTML =
+                "<strong>" + data.event_type + ": " + (data.message || "No message") + "</strong>" +
+                "<br><small>" + data.integration + " — " + data.timestamp + "</small>";
+
+            feed.insertBefore(card, feed.firstChild);
+        };
+    </script>
+</body>
+</html>

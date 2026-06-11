@@ -6,137 +6,118 @@ from rest_framework import status
 from .models import ActivityLog,Integration,PasswordResetToken
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import ActiivityLogSerializer
+from .serializers import ActivityLogSerializer
 import re
+import hashlib
+import hmac
 
 # Create your views here.
 
 class RegisterView(APIView):
     permission_classes=[AllowAny]
     authentication_classes=[]
+    def validate_username(self,username):
+        if username is None:
+            return False, "username is required."
+        
+        username = str(username).strip()
+       
+        if username == "":
+            return False, "username cannot be empty or just spaces."
+        if len(username) > 20:
+            return False, "username is too long. Maximum 20 characters allowed."
+        if len(username) < 3:
+            return False, "username is too short. Minimum 3 characters required."
+        
+        for char in username:
+ 
+            if char.isdigit():
+                return False, "username cannot contain numbers."
+
+            if not char.isalnum():
+                return False, f"username cannot contain special characters or symbols. Found: '{char}'"
+                
+        if User.objects.filter(username=username).exists():
+            return False, "this name is already taken."
+            
+        return True, username  
+    
+    def validate_password(self,password):
+    
+        if password is None:
+            return False, "password key is missing in request."
+        
+        password = str(password)
+        
+        if password == "":
+            return False, "password cannot be empty."
+        if password.strip() == "":
+            return False, "password cannot consist of only spaces."
+        if len(password) < 6:
+            return False, "password must be at least 6 characters long."
+        if len(password) > 128:
+            return False, "password is too long. Maximum 128 characters allowed."
+            
+        has_letter = False
+        has_digit = False
+        for char in password:
+            if char.isalpha():
+                has_letter = True
+            if char.isdigit():
+                has_digit = True
+                
+        if has_digit and not has_letter:
+            return False, "password cannot be entirely numbers. Add some letters."
+        if has_letter and not has_digit:
+            return False, "password cannot be entirely letters. Add some numbers."
+            
+        return True, None
+    
+    def validate_email(self,email):
+    
+        if email is None:
+            return False, "email key is missing in request."
+            
+        email = str(email).strip()
+
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        
+        if not re.match(email_pattern, email):
+            return False, "Invalid email format. Please enter a valid email (e.g., name@example.com)."
+            
+        if User.objects.filter(email=email).exists():
+            return False, "this email is already taken."
+            
+        return True, email  # Return the cleaned email string if successful
 
     def post(self,request):
         try:
             username=request.data.get("username")
             password=request.data.get("password")
             email=request.data.get("email")
+          
+            is_valid_user,user_result=self.validate_username(username)
+            is_valid_pass,pass_result=self.validate_password(password)
+            is_valid_email,email_result=self.validate_email(email)
 
-            if username is None:
+            if not is_valid_user:
                 return Response({
                     "status":"failed",
-                    "message":"username is required."
+                    "message":user_result
                 },status=status.HTTP_400_BAD_REQUEST)
             
-            username = str(username).strip()
-
-            if username== "":
-                return Response({
-                "status": "failed",
-                "message": "username cannot be empty or just spaces."
-            }, status=status.HTTP_400_BAD_REQUEST)
-   
-            if len(username) > 20:
-                return Response({
-                "status": "failed",
-                "message": "username is too long. Maximum 20 characters allowed."
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-            if len(username) < 3:
-                return Response({
-                    "status": "failed",
-                    "message": "username is too short. Minimum 3 characters required."
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-            for char in username:
-
-                if char.isdigit():
-                    return Response({
-                        "status": "failed",
-                        "message": f"username cannot contain numbers."
-                    },status=status.HTTP_400_BAD_REQUEST) 
-                
-                if not char.isalnum():
-                    return Response({
-                        "status": "failed",
-                        "message": f"username cannot contain special characters or symbols. Found: '{char}'"
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if User.objects.filter(username=username).exists():
+            if not is_valid_pass:
                 return Response({
                     "status":"failed",
-                    "message":"this name is already taken."
+                    "message":pass_result,
                 },status=status.HTTP_400_BAD_REQUEST)
             
-            if password is None:
-                return Response({
-                    "status": "failed",
-                    "message": "password key is missing in request."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if password == "":
-                return Response({
-                    "status": "failed",
-                    "message": "password cannot be empty."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if password.strip() == "":
-                return Response({
-                    "status": "failed",
-                    "message": "password cannot consist of only spaces."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if len(password) < 6:
-                return Response({
-                    "status": "failed",
-                    "message": "password must be at least 6 characters long."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if len(password) > 128:
-                return Response({
-                    "status": "failed",
-                    "message": "password is too long. Maximum 128 characters allowed."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            has_letter = False
-            has_digit = False
-                
-            for char in password:
-                if char.isalpha():
-                    has_letter = True
-                if char.isdigit():
-                    has_digit = True
-                
-            if has_digit and not has_letter:
-                return Response({
-                    "status": "failed",
-                    "message": "password cannot be entirely numbers. Add some letters"
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if has_letter and not has_digit:
+            if not is_valid_email:
                 return Response({
                     "status":"failed",
-                    "message": "password cannot be entirely letters. Add some numbers"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            if email is None:
-                return Response({
-                    "status":"failed",
-                    "message":"email key is missing in request."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-
-            if not re.match(email_pattern, email):
-                return Response({
-                    "status": "failed",
-                    "message": "Invalid email format. Please enter a valid email (e.g., name@example.com)."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if User.objects.filter(email=email).exists():
-                return Response({
-                    "status":"failed",
-                    "message":"this email is already taken."
+                    "message":email_result,
                 },status=status.HTTP_400_BAD_REQUEST)
+            
             
             user=User.objects.create_user(username=username,password=password,email=email)
 
@@ -151,18 +132,17 @@ class RegisterView(APIView):
                 "message":str(e)
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-    def get(self,requwst):
+    def get(self,request):
         try:
-            users=User.objects.all()
-            print(users)
-            user_data=[]
-            for user in users:
-                data={
-                    "name":user.username
-                }
-                user_data.append(data)
+            raw_users = User.objects.values("username", "email")
 
-            return Response(user)
+            user_list=list(raw_users)
+
+            return Response({
+                "status":"success",
+                "message":"fect successfully the user details",
+                "data":user_list,
+            },status=status.HTTP_200_OK)
         
         except  Exception as e:
              return Response({
@@ -178,7 +158,7 @@ class ChangePasswordView(APIView):
         try:
             old_password = request.data.get("old_password")
             new_password = request.data.get("new_password")
-
+            
             if old_password is None:
                     return Response({
                     "status":"failed",
@@ -241,17 +221,20 @@ class ForgotPasswordView(APIView):
         try:
             username = request.data.get("username")
             email = request.data.get("email")
+            is_valid_user,user_result=self.validate_username(username)
+            is_valid_email,email_result=self.validate_email(email)
 
-            if not username:
+            if not is_valid_user:
                 return Response({
                     "status":"failed",
-                    "message":"username  is required."
+                    "message":user_result
                 },status=status.HTTP_400_BAD_REQUEST)
-
-            if not email:
+            
+            
+            if not is_valid_email:
                 return Response({
                     "status":"failed",
-                    "message":"email  is required."
+                    "message":email_result,
                 },status=status.HTTP_400_BAD_REQUEST)
 
             user = User.objects.get(username=username, email=email)
@@ -372,7 +355,7 @@ class LogsView(APIView):
             if event_type:
                 logs=logs.filter(event_type=event_type)
 
-            serializers=ActiivityLogSerializer(logs,many=True)
+            serializers=ActivityLogSerializer(logs,many=True)
     
             return Response({
                 "status":"success",
@@ -389,11 +372,12 @@ class LogsView(APIView):
 
 class WebhookReceiveView(APIView):
        
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    authentication_classes = []
     
     def post(self,request):
         try:
-            id=request.objects.get("id")
+            id=request.data.get("id")
             integration =Integration.objects.get(id=id)
             received_token =request.headers.get("X-Webhook-Secret")
             event_type =request.data.get("event_type")
@@ -444,4 +428,115 @@ class WebhookReceiveView(APIView):
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
+class GitHubWebhookView(APIView):
+     
+     permission_classes = [AllowAny]
+     authentication_classes = []
+     
+     def post(self,request,integration_id):
+        try:
+            integration=Integration.objects.get(id=integration_id, is_active=True)
 
+            signature_header = request.headers.get("X-Hub-Signature-256")
+
+            if signature_header and integration.secret_token:
+                expected_signature = "sha256=" + hmac.new(
+                    key=integration.secret_token.encode("utf-8"),
+                    msg=request.body,
+                    digestmod=hashlib.sha256,
+                ).hexdigest()
+            
+                if not hmac.compare_digest(signature_header,expected_signature):
+                    return Response({
+                        "status":"failed",
+                        "message":"invalid signature"
+                    },status=status.HTTP_404_NOT_FOUND)
+            
+
+            github_event=request.headers.get("X-Github-Event","unknown")
+
+            if github_event == "ping":
+                return Response({
+                    "status":"success",
+                    "message":"pong ! webhook is connected",
+                },status=status.HTTP_200_OK)
+            
+            event_type,severity,message=self.parse_github_event(github_event,request.data)
+
+            # Add the parsed message to the payload so the signal/dashboard can read it
+            payload = dict(request.data)
+            payload["message"] = message
+
+            ActivityLog.objects.create(integration=integration,event_type=event_type,severity=severity,payload=payload)
+    
+            return Response({
+                "status":"success",
+                "message":f"GitHub {github_event} event received!"
+            }, status=status.HTTP_202_ACCEPTED,)
+
+        except Integration.DoesNotExist:
+            return Response({
+                "status":"failed",
+                "message":"Integration not found or inactive."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            return Response({
+                "status":"error",
+                "message":str(e)
+            },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    
+     def parse_github_event(self, github_event, data):
+            if github_event == "push":
+                pusher=data.get("pusher",{}).get("name","unknown")
+                branch = data.get("ref", "").replace("refs/heads/", "")
+                commits_count = len(data.get("commits", []))
+
+                return (
+                    "CODE_PUSH",
+                    "INFO",
+                    f"{pusher} pushed {commits_count} commit(s) to {branch}",
+                )
+                
+            elif github_event == "pull_request":
+                # Someone opened/closed/merged a pull request
+                action = data.get("action", "unknown")
+                pr = data.get("pull_request", {})
+                title = pr.get("title", "No title")
+                user = pr.get("user", {}).get("login", "unknown")
+                return (
+                    f"PULL_REQUEST_{action.upper()}",
+                    "INFO",
+                    f"{user}: {title}",
+                )
+            
+            elif github_event == "issues":
+                # Someone created/closed an issue
+                action = data.get("action", "unknown")
+                issue = data.get("issue", {})
+                title = issue.get("title", "No title")
+                user = issue.get("user", {}).get("login", "unknown")
+                return (
+                    f"ISSUE_{action.upper()}",
+                    "WARNING" if action == "opened" else "INFO",
+                    f"{user}: {title}",
+                )
+
+            elif github_event == "star":
+                # Someone starred the repository
+                action = data.get("action", "created")
+                user = data.get("sender", {}).get("login", "unknown")
+                return (
+                    "REPO_STARRED",
+                    "INFO",
+                    f"{user} starred the repository!",
+                )
+            
+            else:
+                # Any other event we haven't specifically handled
+                return (
+                    f"GITHUB_{github_event.upper()}",
+                    "INFO",
+                    f"GitHub event: {github_event}",
+                )
