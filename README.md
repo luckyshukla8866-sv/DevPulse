@@ -1,4 +1,4 @@
-# DevPulse — Full Data Flow (Beginner-Friendly Edition)
+# DevPulse — Full Data Flow
 
 > **Scenario**: You push code to your GitHub repo. Let's trace what happens **step by step** until the dashboard shows "CODE_PUSH: username pushed 1 commit(s) to main".
 
