@@ -520,21 +520,29 @@ class GitHubWebhookView(APIView):
      
      def post(self,request,integration_id):
         try:
+            print("***step1***")
             integration=Integration.objects.get(id=integration_id, is_active=True)  # --- Find the integration ---
-
+            print("integration:",integration)
              # --- Verify the signature ---
             # GitHub signs the payload with your secret token using HMAC-SHA256
             # and sends the signature in the "X-Hub-Signature-256" header.
             # We recalculate the signature and compare to verify it's really from GitHub.
+            print("***step2***")
             signature_header = request.headers.get("X-Hub-Signature-256")
-
+            print("signature_header:",signature_header)
+            print("integration.secret_token:",integration.secret_token)
             if signature_header and integration.secret_token:
+                print("***step3***")
                 expected_signature = "sha256=" + hmac.new(
-                    key=integration .secret_token.encode("utf-8"),
+                    key=integration.secret_token.encode("utf-8"),
                     msg=request.body,
                     digestmod=hashlib.sha256,
                 ).hexdigest()
-            
+                print("integration .secret_token.encode(utf-8):",integration .secret_token.encode("utf-8"))
+                print("expected_signature:",expected_signature)
+                print("***step4***")
+                print("signature_header:\n",signature_header)
+                print("expected_signature\n",expected_signature)
                 if not hmac.compare_digest(signature_header,expected_signature):
                     return Response({
                         "status":"failed",
@@ -544,7 +552,7 @@ class GitHubWebhookView(APIView):
             # --- Read the GitHub event type ---
             # GitHub tells us WHAT happened via the "X-GitHub-Event" header
             github_event=request.headers.get("X-Github-Event","unknown")
-
+            print("github_event:",github_event)
             if github_event == "ping":
                 return Response({
                     "status":"success",
@@ -552,12 +560,14 @@ class GitHubWebhookView(APIView):
                 },status=status.HTTP_200_OK)
             
             # --- Translate GitHub's data to our format ---
+            print("step5")
             event_type,severity,message=self.parse_github_event(github_event,request.data)
-
+            print("event_type:",event_type) 
+            print("severity:",severity)
+            print("message:",message)
             # Add the parsed message to the payload so the signal/dashboard can read it
             payload = dict(request.data)
             payload["message"] = message
-
             ActivityLog.objects.create(integration=integration,event_type=event_type,severity=severity,payload=payload)
     
             return Response({
@@ -585,7 +595,7 @@ class GitHubWebhookView(APIView):
             GitHub sends different JSON for each event type.
             This function reads the right fields from each type.
             """
-
+            print("********Step:1********")
             if github_event == "push":
                 # Someone pushed code to the repository
                 pusher=data.get("pusher",{}).get("name","unknown")
@@ -624,12 +634,15 @@ class GitHubWebhookView(APIView):
 
             elif github_event == "star":
                 # Someone starred the repository
+                print("********Step:2********")
                 action = data.get("action", "created")
+                print("action",action)
                 user = data.get("sender", {}).get("login", "unknown")
+                print("user",user)
                 return (
                     "REPO_STARRED",
                     "INFO",
-                    f"{user} starred the repository!",
+                    f"{user} {action} the repository!",
                 )
             
             else:
@@ -639,3 +652,120 @@ class GitHubWebhookView(APIView):
                     "INFO",
                     f"GitHub event: {github_event}",
                 )
+            
+# ============================================================
+# VIEW 9: Receive REAL Slack Events
+# URL: POST /api/v1/webhooks/slack/<uuid:integration_id>/
+# ============================================================
+
+class SlackWebhookView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request, integration_id):
+        """
+        Handles real events from Slack.
+        Slack sends two types of requests:
+        1. URL verification (first time only) — we echo back the challenge
+        2. Event callbacks (real events) — we save them to the database
+        """
+        print("Step1")
+        # --- Handle URL Verification ---
+        # When you first add the URL in Slack, Slack sends a "challenge"
+        # to make sure your server is real. You just send it back.
+        if request.data.get("type") == "url_verification":
+            challenge = request.data.get("challenge", "")
+            return Response(
+                {"challenge": challenge},
+                status=status.HTTP_200_OK,
+            )
+
+        # --- STEP 2: Find the integration ---
+        try:
+            integration = Integration.objects.get(id=integration_id, is_active=True)
+        except Integration.DoesNotExist:
+            return Response(
+                {"error": "Integration not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        
+        # Slack wraps the actual event inside an "event" key
+        slack_event = request.data.get("event", {})
+        event_type_raw = slack_event.get("type", "unknown")
+
+        # Ignore bot messages (to avoid infinite loops if you add a bot later)
+        if slack_event.get("bot_id"):
+            return Response({"status": "ignored", "message": "Bot message ignored."})
+
+        # --- Translate Slack's format to our format ---
+        event_type, severity, message = self.parse_slack_event(event_type_raw, slack_event)
+
+        # --- Save to database ---
+        payload = dict(request.data)
+        payload["message"] = message
+
+        ActivityLog.objects.create(
+            integration=integration,
+            event_type=event_type,
+            severity=severity,
+            payload=payload,
+        )
+
+        return Response(
+            {"status": "success", "message": f"Slack event received!"},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+    def parse_slack_event(self, event_type_raw, slack_event):
+        """
+        Translates Slack's event format to our event_type, severity, message.
+        """
+
+        if event_type_raw == "message":
+            # Someone posted a message in a channel
+            user = slack_event.get("user", "unknown")
+            text = slack_event.get("text", "No text")
+            channel = slack_event.get("channel", "unknown")
+            return (
+                "SLACK_MESSAGE",
+                "INFO",
+                f"User {user} in #{channel}: {text}",
+            )
+
+        elif event_type_raw == "member_joined_channel":
+            # Someone joined a channel
+            user = slack_event.get("user", "unknown")
+            channel = slack_event.get("channel", "unknown")
+            return (
+                "SLACK_MEMBER_JOINED",
+                "INFO",
+                f"User {user} joined #{channel}",
+            )
+
+        elif event_type_raw == "reaction_added":
+            # Someone added an emoji reaction
+            user = slack_event.get("user", "unknown")
+            reaction = slack_event.get("reaction", "unknown")
+            return (
+                "SLACK_REACTION",
+                "INFO",
+                f"User {user} reacted with :{reaction}:",
+            )
+
+        elif event_type_raw == "channel_created":
+            # A new channel was created
+            channel_info = slack_event.get("channel", {})
+            name = channel_info.get("name", "unknown")
+            return (
+                "SLACK_CHANNEL_CREATED",
+                "WARNING",
+                f"New channel created: #{name}",
+            )
+
+        else:
+            return (
+                f"SLACK_{event_type_raw.upper()}",
+                "INFO",
+                f"Slack event: {event_type_raw}",
+            )

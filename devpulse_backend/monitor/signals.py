@@ -20,6 +20,10 @@ def on_activity_log(sender,instance,created,**kwargs):
     if not created:
         return
     
+    print("="*10,"Signal","="*10)
+    print("created",created)
+    print("sender:",sender)
+    print("instance:",instance)
     # --- PART 1: Send the new log to all dashboard browsers ---
     channel_layer =get_channel_layer()
 

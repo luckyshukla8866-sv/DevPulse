@@ -12,4 +12,5 @@ urlpatterns = [
     path("auth/logout/",LogoutView.as_view(), name="logout"),
     path("webhooks/github/<uuid:integration_id>/",GitHubWebhookView.as_view(), name="github-webhook"),
     path("dashboard/", TemplateView.as_view(template_name="dashboard.html"), name="dashboard"),
+    path("webhooks/slack/<uuid:integration_id>/",SlackWebhookView.as_view(), name="slack-webhook"),
 ]

@@ -14,6 +14,7 @@ class Integration(models.Model):
         GITHUB="GITHUB","GitHub"
         JIRA="JIRA","Jira"
         AWS="AWS","Aws"
+        SLACK="SLACK", "Slack",
 
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     name=models.CharField(max_length=200,help_text="Friendly name, e.g. 'Main GitHub Repo'")

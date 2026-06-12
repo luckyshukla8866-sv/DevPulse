@@ -31,17 +31,18 @@ CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.app"]
 # Application definition
 
 INSTALLED_APPS = [
-    "daphne",
+    "daphne",   # Must be FIRST — enables WebSocket server
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'django_filters',
-    'rest_framework_simplejwt.token_blacklist',
-    'monitor'
+    'rest_framework',   # Django REST Framework
+    'django_filters',   # URL filtering
+
+    'rest_framework_simplejwt.token_blacklist',     #Simple JWT only blacklists refresh tokens
+    'monitor'    # Our app
 ]   
 
 MIDDLEWARE = [
@@ -71,7 +72,7 @@ TEMPLATES = [
         },
     },
 ]
-
+# --- ASGI (needed for WebSockets) ---
 ASGI_APPLICATION = "devpulse_backend.asgi.application"
 
 WSGI_APPLICATION = 'devpulse_backend.wsgi.application'
@@ -82,12 +83,12 @@ WSGI_APPLICATION = 'devpulse_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'devpulse_db',
-        'USER':'devpulse_user',
-        'PASSWORD':'devpulse_pass123',
-        'HOST':'127.0.0.1',
-        'PORT':'5432'
+        'ENGINE': 'django.db.backends.postgresql',  # Specifies the database engine. In this case, PostgreSQL.
+        'NAME': 'devpulse_db',                      # The name of the specific database.
+        'USER':'devpulse_user',                     # The database user authorized to access 'devpulse_db'.
+        'PASSWORD':'devpulse_pass123',              # The password of database.
+        'HOST':'127.0.0.1',                         # The network address where the database server is running.
+        'PORT':'5432'                               # The port number the database 
     }
 }
 
@@ -114,7 +115,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME_LATE_USER': timedelta(days=30),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
-
+# --- Redis connection (for WebSockets and Celery) ---
 CHANNEL_LAYERS={
     "default":{
         "BACKEND":"channels_redis.core.RedisChannelLayer",

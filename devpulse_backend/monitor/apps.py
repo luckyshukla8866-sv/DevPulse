@@ -6,4 +6,4 @@ class MonitorConfig(AppConfig):
     name = 'monitor'
 
     def ready(self):
-        import monitor.signals
+        import monitor.signals  # This line activates the signal handlers
