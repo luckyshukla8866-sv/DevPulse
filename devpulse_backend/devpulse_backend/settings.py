@@ -94,7 +94,7 @@ DATABASES = {
 
 REST_FRAMEWORK ={
     "DEFAULT_AUTHENTICATION_CLASSES":[
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "monitor.authentication.SafeJWTAuthentication",
     ],
     
     'DEFAULT_PERMISSION_CLASSES': (
@@ -108,12 +108,14 @@ REST_FRAMEWORK ={
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
     'SLIDING_TOKEN_LIFETIME': timedelta(days=30),
     'SLIDING_TOKEN_REFRESH_LIFETIME_LATE_USER': timedelta(days=1),
     'SLIDING_TOKEN_LIFETIME_LATE_USER': timedelta(days=30),
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'ROTATE_REFRESH_TOKENS': True,  # ← New refresh token on each refresh
+    'BLACKLIST_AFTER_ROTATION': True,    # ← Old refresh token auto-blacklisted
 }
 # --- Redis connection (for WebSockets and Celery) ---
 CHANNEL_LAYERS={

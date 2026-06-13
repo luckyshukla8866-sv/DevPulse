@@ -76,3 +76,15 @@ class PasswordResetToken(models.Model):
     def __str__(self):
         return f"Reset token for {self.user.username}"
     
+class BlacklistedAccessToken(models.Model):
+    """
+    Stores access tokens that have been invalidated by logout.
+    Each row = one logged-out access token.
+    """
+    token = models.TextField()
+    blacklisted_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"Blacklisted token at {self.blacklisted_at}"
+

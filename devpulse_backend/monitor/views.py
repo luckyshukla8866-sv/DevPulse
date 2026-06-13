@@ -3,101 +3,21 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .models import ActivityLog,Integration,PasswordResetToken
+from .models import ActivityLog,Integration,PasswordResetToken,BlacklistedAccessToken
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import ActivityLogSerializer
-import re
 import hashlib
 import hmac
-
-# ==========================================
-# REUSABLE VALIDATION FUNCTIONS
-# ==========================================
-
-#Proper Validation for Username
-def validate_username(username):
-    if username is None:
-        return False, "username is required."
-    
-    username = str(username).strip()
-    
-    if username == "":
-        return False, "username cannot be empty or just spaces."
-    if len(username) > 20:
-        return False, "username is too long. Maximum 20 characters allowed."
-    if len(username) < 3:
-        return False, "username is too short. Minimum 3 characters required."
-    
-    for char in username:
-
-        if char.isdigit():
-            return False, "username cannot contain numbers."
-
-        if not char.isalnum():
-            return False, f"username cannot contain special characters or symbols. Found: '{char}'"
-            
-    if User.objects.filter(username=username).exists():
-        return False, "this name is already taken."
-        
-    return True, username  
-
-#Proper Validation for Password
-def validate_password(password):
-
-    if password is None:
-        return False, "password key is missing in request."
-    
-    password = str(password)
-    
-    if password == "":
-        return False, "password cannot be empty."
-    if password.strip() == "":
-        return False, "password cannot consist of only spaces."
-    if len(password) < 6:
-        return False, "password must be at least 6 characters long."
-    if len(password) > 128:
-        return False, "password is too long. Maximum 128 characters allowed."
-        
-    has_letter = False
-    has_digit = False
-    for char in password:
-        if char.isalpha():
-            has_letter = True
-        if char.isdigit():
-            has_digit = True
-            
-    if has_digit and not has_letter:
-        return False, "password cannot be entirely numbers. Add some letters."
-    if has_letter and not has_digit:
-        return False, "password cannot be entirely letters. Add some numbers."
-        
-    return True, None
-
-#Proper Validation for email
-def validate_email(email):
-
-    if email is None:
-        return False, "email key is missing in request."
-        
-    email = str(email).strip()
-
-    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    
-    if not re.match(email_pattern, email):
-        return False, "Invalid email format. Please enter a valid email (e.g., name@example.com)."
-        
-    if User.objects.filter(email=email).exists():
-        return False, "this email is already taken."
-        
-    return True, email  # Return the cleaned email string if successful
-
+from .validations import validate_email,validate_password,validate_username,validate_old_password
+from django.contrib.auth import get_user_model
+from datetime import datetime, timezone
 
 # ============================================================
 # VIEW 1: Register a New User
 # URL: POST /api/v1/auth/register/
 # ============================================================
-
+User = get_user_model()
 class RegisterView(APIView):
     """
     Creates a new user account.
@@ -186,45 +106,29 @@ class ChangePasswordView(APIView):
         try:
             old_password = request.data.get("old_password")
             new_password = request.data.get("new_password")
-            
+            current_user=request.user
+            is_valid_old, old_pass_result = validate_old_password(old_password, current_user)
+            is_valid_pass, pass_result = validate_password(new_password)
             #----------Validations----------
-            if old_password is None:
-                    return Response({
-                    "status":"failed",
-                    "message":"old_password key is missing in request."
-                },status=status.HTTP_400_BAD_REQUEST)
             
-            if old_password == "":
+            if not is_valid_old:
                 return Response({
-                    "status":"failed",
-                    "message":"old_password cannot be empty or just spaces."
-                },status=status.HTTP_400_BAD_REQUEST)
+                    "status": "failed",
+                    "message": old_pass_result
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            old_password = str(old_password)
-
-            if new_password is None:
-                    return Response({
-                    "status":"failed",
-                    "message":"new_password key is missing in request."
-                },status=status.HTTP_400_BAD_REQUEST)
-            
-            if new_password == "":
+            if not is_valid_pass:
                 return Response({
-                    "status":"failed",
-                    "message":"new_password cannot be empty or just spaces."
-                },status=status.HTTP_400_BAD_REQUEST)
-               
-            if len(new_password) < 6:
-                return Response({
-                    "status":"failed",
-                    "message":"new password at least 6 characters."
-                },status=status.HTTP_400_BAD_REQUEST)
+                    "status": "failed",
+                    "message": pass_result
+                }, status=status.HTTP_400_BAD_REQUEST) 
             
             if old_password == new_password:
                 return Response({
                     "status": "failed",
                     "message": "Your new password cannot be the same as your old password."
                 }, status=status.HTTP_400_BAD_REQUEST)
+            
             
             current_user = request.user
             current_user.set_password(new_password) # Set the new password (Django automatically hashes it)
@@ -320,6 +224,7 @@ class ResetPassword(APIView):
         try:
             reset_token = request.data.get("reset_token")
             new_password = request.data.get("new_password")
+            is_valid_pass, pass_result = validate_old_password(new_password)
 
             if not reset_token:
                 return Response({
@@ -327,17 +232,11 @@ class ResetPassword(APIView):
                     "message":"reset_token is required."
                 },status=status.HTTP_400_BAD_REQUEST)
             
-            if not new_password:
+            if not is_valid_pass:
                 return Response({
-                    "status":"failed",
-                    "message":"new_password  is required."
-                },status=status.HTTP_400_BAD_REQUEST)
-            
-            if len(new_password) < 6:
-                return Response({
-                    "status":"failed",
-                    "message":"new password at least 6 characters."
-                },status=status.HTTP_400_BAD_REQUEST)
+                    "status": "failed",
+                    "message": pass_result
+                }, status=status.HTTP_400_BAD_REQUEST)            
             
             # Look up the token IN THE DATABASE
             token=PasswordResetToken.objects.get(token=reset_token)
@@ -355,7 +254,7 @@ class ResetPassword(APIView):
         except PasswordResetToken.DoesNotExist:
             return Response({
                  "status":"error",
-                "message":"User not found."
+                "message":"Invalid or expired reset token."
             },status=status.HTTP_404_NOT_FOUND)
              
         except Exception as e:
@@ -378,17 +277,28 @@ class LogoutView(APIView):
         Send: refresh (the refresh token you got at login)
         """
         try:
+            print("***Step1***")
             refresh_token = request.data.get("refresh")
-
+            print("***Step2***")
             if not refresh_token:
                 return Response({
                     "status":"failed",
                     "message":"refresh_token is required."
                      },status=status.HTTP_400_BAD_REQUEST)
-            
+            print("***Step3***")
             token = RefreshToken(refresh_token) # Create a RefreshToken object and blacklist it
             token.blacklist()
-
+            print("***Step4***")
+            auth_header=request.headers.get("Authorization")
+            print("***Step5***")
+            if auth_header.startswith("Bearer "):
+                print("***Step6***")
+                access_token =auth_header.replace("Bearer ", "").strip()
+                print("***Step7***")
+                BlacklistedAccessToken.objects.create(
+                    token=access_token,
+                    expires_at=datetime.now(timezone.utc),
+                )
             return Response({
                 "status":"success",
                 "message":"Logged out successfully."
@@ -565,6 +475,8 @@ class GitHubWebhookView(APIView):
             print("event_type:",event_type) 
             print("severity:",severity)
             print("message:",message)
+            print("="*10,"Data","="*10)
+            print(request.data)
             # Add the parsed message to the payload so the signal/dashboard can read it
             payload = dict(request.data)
             payload["message"] = message
@@ -639,6 +551,8 @@ class GitHubWebhookView(APIView):
                 print("action",action)
                 user = data.get("sender", {}).get("login", "unknown")
                 print("user",user)
+                name=data.get("name","None")
+                print("name:",name)
                 return (
                     "REPO_STARRED",
                     "INFO",
