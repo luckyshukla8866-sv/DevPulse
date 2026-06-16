@@ -10,7 +10,8 @@
             padding: 20px;
         }
         h1 { color: #38bdf8; }
-        #status { color: gray; margin-bottom: 20px; }
+        #status { color: gray; margin-bottom: 10px; }
+        #counter { color: #64748b; margin-bottom: 20px; font-size: 14px; }
 
         .event {
             padding: 15px;
@@ -22,17 +23,112 @@
         .INFO     { border-left-color: #38bdf8; }
         .WARNING  { border-left-color: #facc15; }
         .CRITICAL { border-left-color: #ef4444; background: #2d1215; }
+
+        .source-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+        .source-tag.github  { background: #1f2937; color: #c9d1d9; }
+        .source-tag.slack   { background: #1a1d3a; color: #e0a4ff; }
+        .source-tag.jira    { background: #1a2b3d; color: #4a9eff; }
+        .source-tag.aws     { background: #2d1f15; color: #ff9900; }
+        .source-tag.default { background: #1e293b; color: #94a3b8; }
+
+        .loading {
+            color: #64748b;
+            padding: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <h1>⚡ DevPulse Live Feed</h1>
     <p id="status">Connecting...</p>
-    <div id="feed"></div>
+    <p id="counter"></p>
+    <div id="feed"><p class="loading">Loading history...</p></div>
 
     <script>
         var feed = document.getElementById("feed");
         var statusText = document.getElementById("status");
+        var counterText = document.getElementById("counter");
+        var eventCount = 0;
 
+        // =============================================
+        // HELPER: Create a card from event data
+        // =============================================
+        function createCard(data) {
+            var card = document.createElement("div");
+            card.className = "event " + data.severity;
+
+            // Use repo_name (actual GitHub repo name) for the badge label
+            // Fall back to integration name if repo_name is not available
+            var displayName = data.repo_name || data.integration || "Unknown";
+
+            // Determine source tag color based on event_type or integration name
+            var sourceClass = "default";
+            var eventLower = (data.event_type || "").toLowerCase();
+            var integLower = (data.integration || "").toLowerCase();
+            if (eventLower.indexOf("slack") !== -1 || integLower.indexOf("slack") !== -1) sourceClass = "slack";
+            else if (eventLower.indexOf("github") !== -1 || integLower.indexOf("github") !== -1 ||
+                     eventLower.indexOf("push") !== -1 || eventLower.indexOf("pull") !== -1 ||
+                     eventLower.indexOf("issue") !== -1 || eventLower.indexOf("star") !== -1) sourceClass = "github";
+            else if (integLower.indexOf("jira") !== -1) sourceClass = "jira";
+            else if (integLower.indexOf("aws") !== -1) sourceClass = "aws";
+
+            // Format timestamp nicely
+            var timeStr = "";
+            if (data.timestamp) {
+                var d = new Date(data.timestamp);
+                timeStr = d.toLocaleString();
+            }
+
+            card.innerHTML =
+                '<span class="source-tag ' + sourceClass + '">' + displayName + '</span>' +
+                "<strong>" + data.event_type + ": " + (data.message || "No message") + "</strong>" +
+                "<br><small>" + timeStr + "</small>";
+
+            return card;
+        }
+
+        // =============================================
+        // HELPER: Update event counter
+        // =============================================
+        function updateCounter() {
+            counterText.textContent = "📊 " + eventCount + " event" + (eventCount !== 1 ? "s" : "") + " loaded";
+        }
+
+        // =============================================
+        // STEP 1: Load history from API on page load
+        // =============================================
+        fetch("/api/v1/dashboard/history/")
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                feed.innerHTML = "";  // Remove "Loading history..." text
+
+                if (result.data && result.data.length > 0) {
+                    // data is already sorted newest-first from the API
+                    for (var i = 0; i < result.data.length; i++) {
+                        var card = createCard(result.data[i]);
+                        feed.appendChild(card);
+                    }
+                    eventCount = result.data.length;
+                    updateCounter();
+                } else {
+                    feed.innerHTML = '<p class="loading">No events yet. Waiting for live activity...</p>';
+                }
+            })
+            .catch(function(err) {
+                feed.innerHTML = '<p class="loading">Could not load history. Waiting for live events...</p>';
+                console.error("History load error:", err);
+            });
+
+        // =============================================
+        // STEP 2: Connect WebSocket for LIVE updates
+        // =============================================
         var ws = new WebSocket("ws://" + window.location.host + "/ws/live/feed/");
 
         ws.onopen = function() {
@@ -46,14 +142,15 @@
         ws.onmessage = function(e) {
             var data = JSON.parse(e.data);
 
-            var card = document.createElement("div");
-            card.className = "event " + data.severity;
+            // Remove the "no events" placeholder if present
+            var placeholder = feed.querySelector(".loading");
+            if (placeholder) placeholder.remove();
 
-            card.innerHTML =
-                "<strong>" + data.event_type + ": " + (data.message || "No message") + "</strong>" +
-                "<br><small>" + data.integration + " — " + data.timestamp + "</small>";
+            var card = createCard(data);
+            feed.insertBefore(card, feed.firstChild);  // Add new events at the TOP
 
-            feed.insertBefore(card, feed.firstChild);
+            eventCount++;
+            updateCounter();
         };
     </script>
 </body>

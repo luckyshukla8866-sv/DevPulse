@@ -20,10 +20,6 @@ def on_activity_log(sender,instance,created,**kwargs):
     if not created:
         return
     
-    print("="*10,"Signal","="*10)
-    print("created",created)
-    print("sender:",sender)
-    print("instance:",instance)
     # --- PART 1: Send the new log to all dashboard browsers ---
     channel_layer =get_channel_layer()
 
@@ -33,6 +29,7 @@ def on_activity_log(sender,instance,created,**kwargs):
         "severity":instance.severity,
         "message":instance.payload.get("message"),
         "integration":instance.integration.name,
+        "repo_name":instance.payload.get("repo_name", instance.integration.name),
         "timestamp":instance.created_at.isoformat(),
     } 
 

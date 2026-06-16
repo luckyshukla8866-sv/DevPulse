@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -6,18 +5,21 @@ from rest_framework import status
 from .models import ActivityLog,Integration,PasswordResetToken,BlacklistedAccessToken
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import ActivityLogSerializer
+from .serializers import ActivityLogSerializer,CustomTokenObtainPairSerializer
 import hashlib
 import hmac
 from .validations import validate_email,validate_password,validate_username,validate_old_password
 from django.contrib.auth import get_user_model
 from datetime import datetime, timezone
+from rest_framework_simplejwt.views import TokenObtainPairView
+import re
 
 # ============================================================
 # VIEW 1: Register a New User
 # URL: POST /api/v1/auth/register/
 # ============================================================
 User = get_user_model()
+
 class RegisterView(APIView):
     """
     Creates a new user account.
@@ -88,6 +90,16 @@ class RegisterView(APIView):
                 "status":"error",
                 "message":str(e)
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+# ============================================================
+# VIEW 2: Login 
+# URL: POST /api/v1/auth/token/ 
+# ============================================================        
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 # ============================================================
 # VIEW 2: Change Password (user is logged in)
@@ -167,8 +179,7 @@ class ForgotPasswordView(APIView):
             username = request.data.get("username")
             email = request.data.get("email")
             is_valid_user,user_result=validate_username(username)
-            is_valid_email,email_result=validate_email(email)
-
+            
             if not is_valid_user:
                 return Response({
                     "status":"failed",
@@ -176,11 +187,15 @@ class ForgotPasswordView(APIView):
                 },status=status.HTTP_400_BAD_REQUEST)
             
             
-            if not is_valid_email:
-                return Response({
-                    "status":"failed",
-                    "message":email_result,
-                },status=status.HTTP_400_BAD_REQUEST)
+            if email is None:
+                return False, "email key is missing in request."
+        
+            email = str(email).strip()
+
+            email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            
+            if not re.match(email_pattern, email):
+                return False, "Invalid email format. Please enter a valid email (e.g., name@example.com)."
 
             # Check if a user with this username AND email exists
             user = User.objects.get(username=username, email=email)  
@@ -224,7 +239,7 @@ class ResetPassword(APIView):
         try:
             reset_token = request.data.get("reset_token")
             new_password = request.data.get("new_password")
-            is_valid_pass, pass_result = validate_old_password(new_password)
+            is_valid_pass, pass_result = validate_password(new_password)
 
             if not reset_token:
                 return Response({
@@ -254,7 +269,7 @@ class ResetPassword(APIView):
         except PasswordResetToken.DoesNotExist:
             return Response({
                  "status":"error",
-                "message":"Invalid or expired reset token."
+                "message":"User not found."
             },status=status.HTTP_404_NOT_FOUND)
              
         except Exception as e:
@@ -277,24 +292,22 @@ class LogoutView(APIView):
         Send: refresh (the refresh token you got at login)
         """
         try:
-            print("***Step1***")
             refresh_token = request.data.get("refresh")
-            print("***Step2***")
+
             if not refresh_token:
                 return Response({
                     "status":"failed",
                     "message":"refresh_token is required."
                      },status=status.HTTP_400_BAD_REQUEST)
-            print("***Step3***")
+
             token = RefreshToken(refresh_token) # Create a RefreshToken object and blacklist it
             token.blacklist()
-            print("***Step4***")
+
             auth_header=request.headers.get("Authorization")
-            print("***Step5***")
+
             if auth_header.startswith("Bearer "):
-                print("***Step6***")
                 access_token =auth_header.replace("Bearer ", "").strip()
-                print("***Step7***")
+                
                 BlacklistedAccessToken.objects.create(
                     token=access_token,
                     expires_at=datetime.now(timezone.utc),
@@ -355,6 +368,43 @@ class LogsView(APIView):
                 "message":str(e)
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
+# ============================================================
+# VIEW 6B: Dashboard History (no auth needed — used by the HTML page)
+# URL: GET /api/v1/dashboard/history/
+# ============================================================
+class DashboardHistoryView(APIView):
+    """
+    Returns the last 50 logs in the SAME format as the WebSocket signal,
+    so the dashboard can display them on page load.
+    No authentication required because the dashboard page itself has no login.
+    """
+    
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        try:
+            logs = ActivityLog.objects.select_related("integration").order_by("-created_at")[:50]
+
+            results = []
+            for log in logs:
+                results.append({
+                    "event_type": log.event_type,
+                    "severity": log.severity,
+                    "message": log.payload.get("message", "No message"),
+                    "integration": log.integration.name,
+                    "repo_name": log.payload.get("repo_name", log.integration.name),
+                    "timestamp": log.created_at.isoformat(),
+                })
+
+            return Response({"data": results}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # ============================================================
 # VIEW  7: Receive Webhook Data
@@ -430,29 +480,22 @@ class GitHubWebhookView(APIView):
      
      def post(self,request,integration_id):
         try:
-            print("***step1***")
             integration=Integration.objects.get(id=integration_id, is_active=True)  # --- Find the integration ---
-            print("integration:",integration)
+
              # --- Verify the signature ---
             # GitHub signs the payload with your secret token using HMAC-SHA256
             # and sends the signature in the "X-Hub-Signature-256" header.
             # We recalculate the signature and compare to verify it's really from GitHub.
-            print("***step2***")
+
             signature_header = request.headers.get("X-Hub-Signature-256")
-            print("signature_header:",signature_header)
-            print("integration.secret_token:",integration.secret_token)
+
             if signature_header and integration.secret_token:
-                print("***step3***")
                 expected_signature = "sha256=" + hmac.new(
                     key=integration.secret_token.encode("utf-8"),
                     msg=request.body,
                     digestmod=hashlib.sha256,
                 ).hexdigest()
-                print("integration .secret_token.encode(utf-8):",integration .secret_token.encode("utf-8"))
-                print("expected_signature:",expected_signature)
-                print("***step4***")
-                print("signature_header:\n",signature_header)
-                print("expected_signature\n",expected_signature)
+
                 if not hmac.compare_digest(signature_header,expected_signature):
                     return Response({
                         "status":"failed",
@@ -462,7 +505,7 @@ class GitHubWebhookView(APIView):
             # --- Read the GitHub event type ---
             # GitHub tells us WHAT happened via the "X-GitHub-Event" header
             github_event=request.headers.get("X-Github-Event","unknown")
-            print("github_event:",github_event)
+
             if github_event == "ping":
                 return Response({
                     "status":"success",
@@ -470,16 +513,12 @@ class GitHubWebhookView(APIView):
                 },status=status.HTTP_200_OK)
             
             # --- Translate GitHub's data to our format ---
-            print("step5")
-            event_type,severity,message=self.parse_github_event(github_event,request.data)
-            print("event_type:",event_type) 
-            print("severity:",severity)
-            print("message:",message)
-            print("="*10,"Data","="*10)
-            print(request.data)
-            # Add the parsed message to the payload so the signal/dashboard can read it
+            repo_name,event_type,severity,message=self.parse_github_event(github_event,request.data)
+            
+            # Add the parsed message and repo name to the payload so the signal/dashboard can read it
             payload = dict(request.data)
             payload["message"] = message
+            payload["repo_name"] = repo_name
             ActivityLog.objects.create(integration=integration,event_type=event_type,severity=severity,payload=payload)
     
             return Response({
@@ -507,7 +546,8 @@ class GitHubWebhookView(APIView):
             GitHub sends different JSON for each event type.
             This function reads the right fields from each type.
             """
-            print("********Step:1********")
+            repo_name = data.get("repository", {}).get("name", "unknown-repo")
+            print(repo_name)
             if github_event == "push":
                 # Someone pushed code to the repository
                 pusher=data.get("pusher",{}).get("name","unknown")
@@ -515,11 +555,12 @@ class GitHubWebhookView(APIView):
                 commits_count = len(data.get("commits", []))
 
                 return (
+                    repo_name,
                     "CODE_PUSH",
                     "INFO",
                     f"{pusher} pushed {commits_count} commit(s) to {branch}",
                 )
-                
+                    
             elif github_event == "pull_request":
                 # Someone opened/closed/merged a pull request
                 action = data.get("action", "unknown")
@@ -527,6 +568,7 @@ class GitHubWebhookView(APIView):
                 title = pr.get("title", "No title")
                 user = pr.get("user", {}).get("login", "unknown")
                 return (
+                    repo_name,
                     f"PULL_REQUEST_{action.upper()}",
                     "INFO",
                     f"{user}: {title}",
@@ -539,6 +581,7 @@ class GitHubWebhookView(APIView):
                 title = issue.get("title", "No title")
                 user = issue.get("user", {}).get("login", "unknown")
                 return (
+                    repo_name,
                     f"ISSUE_{action.upper()}",
                     "WARNING" if action == "opened" else "INFO",
                     f"{user}: {title}",
@@ -546,14 +589,10 @@ class GitHubWebhookView(APIView):
 
             elif github_event == "star":
                 # Someone starred the repository
-                print("********Step:2********")
                 action = data.get("action", "created")
-                print("action",action)
                 user = data.get("sender", {}).get("login", "unknown")
-                print("user",user)
-                name=data.get("name","None")
-                print("name:",name)
                 return (
+                    repo_name,
                     "REPO_STARRED",
                     "INFO",
                     f"{user} {action} the repository!",
@@ -562,6 +601,7 @@ class GitHubWebhookView(APIView):
             else:
                 # Any other event we haven't specifically handled
                 return (
+                    repo_name,
                     f"GITHUB_{github_event.upper()}",
                     "INFO",
                     f"GitHub event: {github_event}",
@@ -577,70 +617,82 @@ class SlackWebhookView(APIView):
     authentication_classes = []
 
     def post(self, request, integration_id):
-        """
-        Handles real events from Slack.
-        Slack sends two types of requests:
-        1. URL verification (first time only) — we echo back the challenge
-        2. Event callbacks (real events) — we save them to the database
-        """
-        print("Step1")
-        # --- Handle URL Verification ---
-        # When you first add the URL in Slack, Slack sends a "challenge"
-        # to make sure your server is real. You just send it back.
-        if request.data.get("type") == "url_verification":
-            challenge = request.data.get("challenge", "")
-            return Response(
-                {"challenge": challenge},
-                status=status.HTTP_200_OK,
-            )
-
-        # --- STEP 2: Find the integration ---
         try:
-            integration = Integration.objects.get(id=integration_id, is_active=True)
-        except Integration.DoesNotExist:
-            return Response(
-                {"error": "Integration not found."},
-                status=status.HTTP_404_NOT_FOUND,
+            """
+            Handles real events from Slack.
+            Slack sends two types of requests:
+            1. URL verification (first time only) — we echo back the challenge
+            2. Event callbacks (real events) — we save them to the database
+            """
+            # --- Handle URL Verification ---
+            if request.data.get("type") == "url_verification":
+                challenge = request.data.get("challenge", "")
+                return Response(
+                    {"challenge": challenge},
+                    status=status.HTTP_200_OK,
+                )
+            # --- Find the integration ---
+            try:
+                integration = Integration.objects.get(id=integration_id, is_active=True)
+                print("Model:",integration)
+            except Integration.DoesNotExist:
+                return Response(
+                    {"error": "Integration not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            
+            # --- Parse the Slack event ---
+            slack_event = request.data.get("event", {})
+            event_type_raw = slack_event.get("type", "unknown")
+         
+            # Ignore bot messages (to avoid infinite loops if you add a bot later)
+            if slack_event.get("bot_id"):
+                return Response({"status": "ignored", "message": "Bot message ignored."})
+         
+            # --- Translate Slack's format to our format ---
+            event_type, severity, message = self.parse_slack_event(event_type_raw, slack_event)
+            print("event_type:",event_type)
+            print("severity:",severity)
+            print("message:",message)
+            # --- Save to database ---
+            print("****step5****")
+            payload = dict(request.data)
+            payload["message"] = message
+            print("playload:",payload)
+
+            ActivityLog.objects.create(
+                integration=integration,
+                event_type=event_type,
+                severity=severity,
+                payload=payload,
             )
 
-        
-        # Slack wraps the actual event inside an "event" key
-        slack_event = request.data.get("event", {})
-        event_type_raw = slack_event.get("type", "unknown")
-
-        # Ignore bot messages (to avoid infinite loops if you add a bot later)
-        if slack_event.get("bot_id"):
-            return Response({"status": "ignored", "message": "Bot message ignored."})
-
-        # --- Translate Slack's format to our format ---
-        event_type, severity, message = self.parse_slack_event(event_type_raw, slack_event)
-
-        # --- Save to database ---
-        payload = dict(request.data)
-        payload["message"] = message
-
-        ActivityLog.objects.create(
-            integration=integration,
-            event_type=event_type,
-            severity=severity,
-            payload=payload,
-        )
-
-        return Response(
-            {"status": "success", "message": f"Slack event received!"},
-            status=status.HTTP_202_ACCEPTED,
-        )
+            return Response(
+                {"status": "success",
+                 "message": f"Slack event received!"},
+                status=status.HTTP_202_ACCEPTED,
+            )
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def parse_slack_event(self, event_type_raw, slack_event):
         """
         Translates Slack's event format to our event_type, severity, message.
         """
-
+        print("="*10,"Slack_Fun","="*10)
+        print("event_type_raw",event_type_raw)
+        print("slack_event",slack_event)
         if event_type_raw == "message":
             # Someone posted a message in a channel
             user = slack_event.get("user", "unknown")
+            print("user:",user)
             text = slack_event.get("text", "No text")
+            print("text:",text)
             channel = slack_event.get("channel", "unknown")
+            print("chennal:",channel)
             return (
                 "SLACK_MESSAGE",
                 "INFO",
@@ -683,3 +735,4 @@ class SlackWebhookView(APIView):
                 "INFO",
                 f"Slack event: {event_type_raw}",
             )
+

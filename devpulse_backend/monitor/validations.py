@@ -28,9 +28,6 @@ def validate_username(username):
 
         if not char.isalnum():
             return False, f"username cannot contain special characters or symbols. Found: '{char}'"
-            
-    if User.objects.filter(username=username).exists():
-        return False, "this name is already taken."
         
     return True, username  
 
