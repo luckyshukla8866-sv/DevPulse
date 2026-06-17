@@ -736,3 +736,136 @@ class SlackWebhookView(APIView):
                 f"Slack event: {event_type_raw}",
             )
 
+# ============================================================
+# VIEW 10: Receive REAL Jira Webhooks
+# URL: POST /api/v1/webhooks/jira/<uuid:integration_id>/
+# ============================================================
+
+class JiraWebhookView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request, integration_id):
+        """
+        Handles real webhooks from Jira.
+        Jira sends a POST request every time something changes
+        (issue created, updated, deleted, commented, etc.)
+        """
+        # --- Find the integration ---
+        try:
+            integration = Integration.objects.get(id=integration_id, is_active=True)
+        except Integration.DoesNotExist:
+            return Response(
+                {"error": "Integration not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+       
+        
+        # --- Read the Jira event type ---
+        # Jira sends the event name in a field called "webhookEvent"
+      
+        webhook_event = request.data.get("webhookEvent", "unknown")
+        # --- STEP 3: Translate Jira's format to our format ---
+        event_type, severity, message = self.parse_jira_event(webhook_event, request.data)
+
+        # --- STEP 4: Save to database ---
+        payload = dict(request.data)
+        payload["message"] = message
+        
+        ActivityLog.objects.create(
+            integration=integration,
+            event_type=event_type,
+            severity=severity,
+            payload=payload,
+        )
+
+        return Response({
+            "status": "success", 
+            "message": f"Jira event received: {webhook_event}"
+            },status=status.HTTP_202_ACCEPTED,)
+
+    def parse_jira_event(self, webhook_event, data):
+        """
+        Translates Jira's event format to our event_type, severity, message.
+        """
+        print("*****step1*****")
+        print("Data:",data)
+        # Get common fields that most Jira events have
+        user = data.get("user", {}).get("displayName", "Unknown")
+        issue = data.get("issue", {})
+        issue_key = issue.get("key", "")
+        fields = issue.get("fields", {})
+        summary = fields.get("summary", "No summary")
+        priority = fields.get("priority", {}).get("name", "Normal")
+        issue_type = fields.get("issuetype", {}).get("name", "Task")
+        
+        # Decide severity based on Jira priority
+        if priority in ["Highest", "Critical"]:
+            severity = "CRITICAL"
+        elif priority in ["High"]:
+            severity = "WARNING"
+        else:
+            severity = "INFO"
+
+        if webhook_event == "jira:issue_created":
+            return (
+                "JIRA_ISSUE_CREATED",
+                severity,
+                f"{user} created {issue_type} {issue_key}: {summary}",
+            )
+
+        elif webhook_event == "jira:issue_updated":
+            # Check if the status changed (e.g., "To Do" → "In Progress")
+            changelog = data.get("changelog", {})
+            items = changelog.get("items", [])
+            status_change = ""
+            for item in items:
+                if item.get("field") == "status":
+                    old_status = item.get("fromString", "?")
+                    new_status = item.get("toString", "?")
+                    status_change = f" [{old_status} → {new_status}]"
+                    break
+
+            return (
+                "JIRA_ISSUE_UPDATED",
+                severity,
+                f"{user} updated {issue_key}: {summary}{status_change}",
+            )
+
+        elif webhook_event == "jira:issue_deleted":
+            return (
+                "JIRA_ISSUE_DELETED",
+                "WARNING",
+                f"{user} deleted {issue_key}: {summary}",
+            )
+
+        elif webhook_event == "comment_created":
+            comment_body = data.get("comment", {}).get("body", "No comment text")
+            # Jira comments can be very long, so we take first 100 characters
+            short_comment = comment_body[:100]
+            return (
+                "JIRA_COMMENT_ADDED",
+                "INFO",
+                f"{user} commented on {issue_key}: {short_comment}",
+            )
+
+        elif webhook_event == "comment_updated":
+            return (
+                "JIRA_COMMENT_UPDATED",
+                "INFO",
+                f"{user} edited a comment on {issue_key}",
+            )
+
+        elif webhook_event == "issuelink_created":
+            return (
+                "JIRA_LINK_CREATED",
+                "INFO",
+                f"{user} linked {issue_key} to another issue",
+            )
+
+        else:
+            return (
+                f"JIRA_{webhook_event.upper().replace(':', '_')}",
+                "INFO",
+                f"Jira event: {webhook_event} by {user}",
+            )

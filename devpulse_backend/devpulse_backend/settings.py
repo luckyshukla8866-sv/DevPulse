@@ -12,18 +12,21 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta 
+from dotenv import load_dotenv
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v(km7ab4eovkg+vff#9erz6y(pzr%2wsoj8$=3d!xcwkw)qr*m'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-unsafe-key-for-dev')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ["*"]    # Allow all hosts (for development only)
 CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.app"]
@@ -83,12 +86,12 @@ WSGI_APPLICATION = 'devpulse_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',  # Specifies the database engine. In this case, PostgreSQL.
-        'NAME': 'devpulse_db',                      # The name of the specific database.
-        'USER':'devpulse_user',                     # The database user authorized to access 'devpulse_db'.
-        'PASSWORD':'devpulse_pass123',              # The password of database.
-        'HOST':'127.0.0.1',                         # The network address where the database server is running.
-        'PORT':'5432'                               # The port number the database 
+        'ENGINE': 'django.db.backends.postgresql',   # Specifies the database engine. In this case, PostgreSQL.
+        'NAME': os.getenv('DB_NAME', 'devpulse_db'), # The name of the specific database.
+        'USER':os.getenv('DB_USER', 'devpulse_user'),# The database user authorized to access 'devpulse_db'.
+        'PASSWORD':os.getenv('DB_PASSWORD', ''),     # The password of database.
+        'HOST':os.getenv('DB_HOST', '127.0.0.1'),    # The network address where the database server is running.
+        'PORT': os.getenv('DB_PORT', '5432'),        # The port number the database 
     }
 }
 

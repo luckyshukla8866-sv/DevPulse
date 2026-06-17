@@ -16,6 +16,7 @@ urlpatterns = [
     path("webhooks/slack/<uuid:integration_id>/",SlackWebhookView.as_view(), name="slack-webhook"),
     path("dashboard/", TemplateView.as_view(template_name="dashboard.html"), name="dashboard"),
     path("dashboard/history/",DashboardHistoryView.as_view(), name="dashboard-history"),
+    path("webhooks/jira/<uuid:integration_id>/",JiraWebhookView.as_view(), name="jira-webhook"),
     path("auth/logout/",LogoutView.as_view(), name="logout"),
 ]
 
