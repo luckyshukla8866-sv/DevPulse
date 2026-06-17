@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import *
+from monitor.views.auth import *
+from monitor.views.dashboard import *
+from monitor.views.webhooks import *
 from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 

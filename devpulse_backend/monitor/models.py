@@ -87,4 +87,3 @@ class BlacklistedAccessToken(models.Model):
 
     def __str__(self):
         return f"Blacklisted token at {self.blacklisted_at}"
-

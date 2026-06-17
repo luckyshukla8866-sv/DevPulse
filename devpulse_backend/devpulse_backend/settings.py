@@ -119,6 +119,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'ROTATE_REFRESH_TOKENS': True,  # ← New refresh token on each refresh
     'BLACKLIST_AFTER_ROTATION': True,    # ← Old refresh token auto-blacklisted
+    'UPDATE_LAST_LOGIN': True,
 }
 # --- Redis connection (for WebSockets and Celery) ---
 CHANNEL_LAYERS={

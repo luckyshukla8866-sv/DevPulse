@@ -23,7 +23,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         try:
             data = super().validate(attrs)
-            print("data:",data)
             return data
 
         except AuthenticationFailed:

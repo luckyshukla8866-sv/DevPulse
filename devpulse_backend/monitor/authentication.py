@@ -10,8 +10,9 @@ class SafeJWTAuthentication(JWTAuthentication):
     if the access token has been blacklisted (by logout).
     """
     def authenticate(self, request):
+
         header = self.get_header(request)
-    
+
         if header is None:
             raise AuthenticationFailed({
                 "status": "failed",
@@ -41,10 +42,20 @@ class SafeJWTAuthentication(JWTAuthentication):
         # If no token was provided, return None (let other auth handle it)
         if result is None:
             return None
-
+        
         # result is a tuple: (user, validated_token)
         user, validated_token = result
 
+        token_generation_time = validated_token.get("iat")
+
+        if user.last_login and token_generation_time:
+            user_last_login_time = int(user.last_login.timestamp())
+    
+            if token_generation_time < user_last_login_time:
+                raise AuthenticationFailed({
+                    "status": "failed",
+                    "message": "This token is no longer valid because a newer login session was created."
+                })
         # 2. Decode and strip it cleanly into a plain string
         if isinstance(raw_token, bytes):
             token_string = raw_token.decode('utf-8').strip()
