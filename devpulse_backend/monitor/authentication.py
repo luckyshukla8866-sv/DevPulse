@@ -12,7 +12,7 @@ class SafeJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
 
         header = self.get_header(request)
-
+        print("header:",header)
         if header is None:
             raise AuthenticationFailed({
                 "status": "failed",

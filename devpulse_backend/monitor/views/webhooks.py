@@ -223,6 +223,7 @@ class SlackWebhookView(APIView):
         Translates Slack's event format to our event_type, severity, message.
         """
         try:
+            
             if event_type_raw == "message":
                 # Someone posted a message in a channel
                 user = slack_event.get("user", "unknown")  
@@ -294,6 +295,7 @@ class JiraWebhookView(APIView):
             Jira sends a POST request every time something changes
             (issue created, updated, deleted, commented, etc.)
             """
+         
             # --- Find the integration ---
             try:
                 integration = Integration.objects.get(id=integration_id, is_active=True)
@@ -305,16 +307,15 @@ class JiraWebhookView(APIView):
         
             # --- Read the Jira event type ---
             # Jira sends the event name in a field called "webhookEvent"
-
             webhook_event = request.data.get("webhookEvent", "unknown")
-
-            # --- STEP 3: Translate Jira's format to our format ---
+            print("******step2*****")
+            # --- Translate Jira's format to our format ---
             event_type, severity, message = self.parse_jira_event(webhook_event, request.data)
-            
-            # --- STEP 4: Save to database ---
+            print("******step3*****")
+            # --- Save to database ---
             payload = dict(request.data)
             payload["message"] = message
-            
+            print("******step1*****")
             ActivityLog.objects.create(
                 integration=integration,
                 event_type=event_type,
@@ -338,14 +339,16 @@ class JiraWebhookView(APIView):
             """
             Translates Jira's event format to our event_type, severity, message.
             """
+           
             # Get common fields that most Jira events have
             user = (data.get("user") or {}).get("displayName", "Unknown")
             issue = data.get("issue", {})
             issue_key = issue.get("key", "")
             fields = issue.get("fields", {})
             summary = fields.get("summary", "No summary")
-            priority = (fields.get("priority"),{}).get("name", "Normal")
-            issue_type = (fields.get("issuetype"),{}).get("name", "Task")
+            priority = (fields.get("priority") or {}).get("name", "Normal")
+            issue_type = (fields.get("issuetype") or{}).get("name", "Task")
+    
             # Decide severity based on Jira priority
             if priority in ["Highest", "Critical"]:
                 severity = "CRITICAL"
@@ -360,7 +363,7 @@ class JiraWebhookView(APIView):
                     severity,
                     f"{user} created {issue_type} {issue_key}: {summary}",
                 )
-
+            
             elif webhook_event == "jira:issue_updated":
                 # Check if the status changed (e.g., "To Do" → "In Progress")
                 changelog = data.get("changelog", {})
@@ -378,7 +381,7 @@ class JiraWebhookView(APIView):
                     severity,
                     f"{user} updated {issue_key}: {summary}{status_change}",
                 )
-
+            
             elif webhook_event == "jira:issue_deleted":
                 return (
                     "JIRA_ISSUE_DELETED",

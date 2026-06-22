@@ -19,6 +19,9 @@ urlpatterns = [
     path("dashboard/", TemplateView.as_view(template_name="dashboard.html"), name="dashboard"),
     path("dashboard/history/",DashboardHistoryView.as_view(), name="dashboard-history"),
     path("webhooks/jira/<uuid:integration_id>/",JiraWebhookView.as_view(), name="jira-webhook"),
+    path("webhooks/search/",SearchView.as_view(),name="search-webhooks"),
+    path("dashboard/search/",DashboardSearchView.as_view(),name="dashboard-search"),
     path("auth/logout/",LogoutView.as_view(), name="logout"),
+
 ]
 

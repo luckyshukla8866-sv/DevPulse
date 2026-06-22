@@ -33,7 +33,7 @@ class RegisterView(APIView):
             password=request.data.get("password")
             email=request.data.get("email")
           
-            is_valid_user,user_result=validate_username(username)
+            is_valid_user,user_result=validate_username(username,"username")
             is_valid_pass,pass_result=validate_password(password)
             is_valid_email,email_result=validate_email(email)
 
@@ -177,7 +177,7 @@ class ForgotPasswordView(APIView):
         try:
             username = request.data.get("username")
             email = request.data.get("email")
-            is_valid_user,user_result=validate_username(username)
+            is_valid_user,user_result=validate_username(username,"username")
             
             if not is_valid_user:
                 return Response({

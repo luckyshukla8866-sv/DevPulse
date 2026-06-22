@@ -16,6 +16,7 @@ def on_activity_log(sender,instance,created,**kwargs):
     - instance: The actual log row that was just saved
     - created: True if this is a brand new row, False if an existing row was updated
     """
+
     # Only react to NEW logs, not edits to existing ones
     if not created:
         return
@@ -42,7 +43,7 @@ def on_activity_log(sender,instance,created,**kwargs):
         },
     )
 
-     # --- PART 2: If it's a CRITICAL event, create an alert and notify ---
+     # --- If it's a CRITICAL event, create an alert and notify ---
     if instance.severity == "CRITICAL":
         SystemAlert.objects.create(activity_log=instance)   # Create a SystemAlert row in the database
 
