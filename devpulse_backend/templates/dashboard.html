@@ -175,6 +175,13 @@
             display: flex;
             align-items: center;
             gap: var(--spacing-xs);
+            text-decoration: none;
+            transition: all var(--transition-fast);
+        }
+
+        .context-title:hover {
+            background: var(--color-primary);
+            color: white;
         }
 
         /* Header Right Side Utilities */
@@ -311,110 +318,6 @@
         }
         
         /* =============================================
-               FILTER BAR
-               ============================================= */
-        .filter-bar {
-            background: var(--color-card);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            padding: var(--spacing-md);
-            margin-bottom: var(--spacing-lg);
-            display: flex;
-            align-items: flex-end;
-            gap: var(--spacing-md);
-            flex-wrap: wrap;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .filter-bar .field {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-xs);
-            flex: 1 1 140px;
-        }
-        
-        .filter-bar .field label {
-            font-size: var(--font-size-tiny);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--color-text-muted);
-        }
-        
-        .filter-bar .field select,
-        .filter-bar .field input {
-            padding: 8px 12px;
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-family);
-            font-size: var(--font-size-base);
-            color: var(--color-text-primary);
-            background: var(--color-card);
-            transition: all var(--transition-fast);
-            outline: none;
-            width: 100%;
-        }
-        
-        .filter-bar .field select:focus,
-        .filter-bar .field input:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-        
-        .filter-bar .field select:hover,
-        .filter-bar .field input:hover {
-            border-color: var(--color-border-hover);
-        }
-        
-        .filter-bar .actions {
-            display: flex;
-            gap: var(--spacing-sm);
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            padding: 8px 20px;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: var(--font-family);
-            font-size: var(--font-size-base);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            display: inline-flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            white-space: nowrap;
-        }
-        
-        .btn-primary {
-            background: var(--color-primary);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: var(--color-primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-        
-        .btn-secondary {
-            background: var(--color-border);
-            color: var(--color-text-secondary);
-        }
-        
-        .btn-secondary:hover {
-            background: var(--color-border-hover);
-            color: var(--color-text-primary);
-        }
-        
-        .btn-sm {
-            padding: 6px 14px;
-            font-size: var(--font-size-small);
-        }
-        
-        /* =============================================
                SEARCH STATUS BAR
                ============================================= */
         #search-status {
@@ -467,18 +370,6 @@
         }
         
         /* =============================================
-               WORKSPACE ENCLOSURE DESIGN
-               ============================================= */
-        .feed-workspace-card {
-            background: var(--color-card);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-lg);
-            box-shadow: var(--shadow-sm);
-            margin-top: var(--spacing-md);
-        }
-
-        /* =============================================
                EVENT FEED LOGS & LISTS
                ============================================= */
         #feed {
@@ -507,7 +398,7 @@
         }
         
         .event-card {
-            background: var(--color-bg); /* Dynamic card depth contrast */
+            background: var(--color-card);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
             padding: var(--spacing-md);
@@ -557,7 +448,7 @@
         .event-card .event-avatar.aws { background: #FF9900; color: #232F3E; }
         .event-card .event-avatar.default { background: var(--color-primary-bg); color: var(--color-primary); }
         
-        .event-card .event-content {
+        .event-content {
             flex: 1;
             min-width: 0;
         }
@@ -691,64 +582,6 @@
         .source-tag.default { background: var(--color-primary-bg); color: var(--color-primary); }
         
         /* =============================================
-               UX ENHANCED PAGINATION DESIGN
-               ============================================= */
-        .pagination-container {
-            display: none;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: var(--spacing-xl);
-            padding-top: var(--spacing-md);
-            border-top: 1px solid var(--color-border);
-        }
-
-        .pagination-container .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            padding: 8px 16px;
-            background: var(--color-card);
-            border: 1px solid var(--color-border);
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-small);
-            font-weight: 500;
-            border-radius: var(--radius-sm);
-            transition: all 200ms ease;
-        }
-
-        .pagination-container .btn:not(:disabled):hover {
-            background: var(--color-primary-bg);
-            border-color: var(--color-primary-light);
-            color: var(--color-primary);
-            transform: translateY(-1px);
-        }
-
-        .pagination-container .btn:disabled {
-            background: var(--color-bg);
-            color: var(--color-text-muted);
-            border-color: var(--color-border);
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .pagination-container #pageIndicator {
-            font-size: var(--font-size-small);
-            font-weight: 500;
-            color: var(--color-text-secondary);
-            background: var(--color-bg);
-            border: 1px solid var(--color-border);
-            padding: 6px 16px;
-            border-radius: 20px;
-        }
-
-        .pagination-container #currentPageNum {
-            font-weight: 700;
-            color: var(--color-primary);
-        }
-
-        /* =============================================
                EMPTY LAYOUT AND LOADING STATES
                ============================================= */
         .empty-state {
@@ -812,15 +645,10 @@
             .header-left { width: 100%; justify-content: flex-start; }
             .header-right { width: 100%; justify-content: space-between; }
             .main-content { padding: var(--spacing-md); }
-            .filter-bar { flex-direction: column; align-items: stretch; }
-            .filter-bar .field { flex: 1 1 auto; }
-            .filter-bar .actions { justify-content: stretch; }
-            .filter-bar .actions .btn { flex: 1; justify-content: center; }
             .event-card { flex-direction: column; }
             .event-card .event-actions { opacity: 1; margin-left: 0; margin-top: var(--spacing-sm); width: 100%; justify-content: flex-start; }
             .event-card .event-header { flex-direction: column; align-items: flex-start; }
             #counter .last-update { display: none; }
-            .pagination-container { width: 100%; }
         }
         
         /* =============================================
@@ -880,20 +708,142 @@
             from { opacity: 0; transform: translateX(100%); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        /* =============================================
+               WORKSPACE ENCLOSURE DESIGN
+          ============================================= */
+        .feed-workspace-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        /* =============================================
+               UX ENHANCED PAGINATION DESIGN
+           ============================================= */
+        .pagination-container {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--color-border);
+        }
+        
+        .pagination-container .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: 8px 16px;
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-small);
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            transition: all 200ms ease;
+        }
+        
+        .pagination-container .btn:not(:disabled):hover {
+            background: var(--color-primary-bg);
+            border-color: var(--color-primary-light);
+            color: var(--color-primary);
+            transform: translateY(-1px);
+        }
+        
+        .pagination-container .btn:disabled {
+            background: var(--color-bg);
+            color: var(--color-text-muted);
+            border-color: var(--color-border);
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .pagination-container #pageIndicator {
+            font-size: var(--font-size-small);
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            padding: 6px 16px;
+            border-radius: 20px;
+        }
+        
+        .pagination-container #currentPageNum {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        /* =============================================
+                PROFESSIONAL ACTION BUTTON DESIGN
+        ============================================= */
+        .btn-advanced-search {
+            background: var(--color-primary-bg);
+            color: var(--color-primary-dark);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            font-size: var(--font-size-small);
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            transition: all var(--transition-fast);
+            outline: none;
+        }
+
+        .btn-advanced-search i {
+            font-size: 12px;
+            color: var(--color-primary);
+            transition: transform var(--transition-fast);
+        }
+
+        /* Hover State: Smooth background deepening and elevation */
+        .btn-advanced-search:hover {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn-advanced-search:hover i {
+            color: white;
+            transform: rotate(90deg); /* Playful micro-interaction on the sliders icon */
+        }
+
+        /* Active State: Click indentation */
+        .btn-advanced-search:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Focus State: Accessible keyboard navigation indicator */
+        .btn-advanced-search:focus-visible {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+        }
     </style>
 </head>
 <body>
 
     <header class="global-header">
         <div class="header-left">
-            <a href="#" class="brand">
+            <a href="/dashboard/" class="brand">
                 <div class="logo-icon">D</div>
                 <h1>Dev<span>Pulse</span></h1>
             </a>
             <span class="context-divider">·</span>
-            <div class="context-title">
-                <i class="fas fa-bolt"></i> Live Feed
-            </div>
+            <a href="/dashboard/search.html" class="context-title" title="Open Advanced Search Panel">
+                <i class="fas fa-search"></i> Advanced Search
+            </a>
         </div>
 
         <div class="header-right">
@@ -902,11 +852,17 @@
                     <span class="dot connecting" id="statusDot"></span>
                     <span id="statusText">Connecting...</span>
                 </span>
+                
                 <button class="icon-btn" onclick="showToast('info', 'New updates', 'You have 5 new events')">
                     <i class="fas fa-bell"></i>
                     <span class="notification-dot"></span>
                 </button>
-                <button class="icon-btn" onclick="doSearch()" title="Refresh">
+                
+                <button class="icon-btn" onclick="window.location.href='/dashboard/search.html'" title="Advanced Search" style="background: var(--color-primary-bg); color: var(--color-primary); border-color: var(--color-primary-light);">
+                    <i class="fas fa-search"></i>
+                </button>
+
+                <button class="icon-btn" onclick="loadHistory()" title="Refresh">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
@@ -927,41 +883,6 @@
             <p>Real-time activity log aggregated across all active enterprise applications</p>
         </section>
         
-        <div class="filter-bar">
-            <div class="field">
-                <label><i class="fas fa-filter"></i> Application</label>
-                <select id="app-filter">
-                    <option value="">All Applications</option>
-                    <option value="github">GitHub</option>
-                    <option value="slack">Slack</option>
-                    <option value="jira">Jira</option>
-                    <option value="aws">AWS</option>
-                </select>
-            </div>
-            <div class="field">
-                <label><i class="fas fa-calendar-alt"></i> Start Date</label>
-                <input type="date" id="start-date">
-            </div>
-            <div class="field">
-                <label><i class="fas fa-calendar-alt"></i> End Date</label>
-                <input type="date" id="end-date">
-            </div>
-            <div class="field" style="flex: 1 1 200px;">
-                <label>&nbsp;</label>
-                <div class="actions">
-                    <button class="btn btn-primary" onclick="doSearch()">
-                        <i class="fas fa-search"></i> Search
-                    </button>
-                    <button class="btn btn-secondary" onclick="clearSearch()">
-                        <i class="fas fa-undo"></i> Clear
-                    </button>
-                    <button class="btn btn-secondary" onclick="saveView()">
-                        <i class="fas fa-bookmark"></i> Save
-                    </button>
-                </div>
-            </div>
-        </div>
-        
         <div id="search-status"></div>
         
         <div class="feed-header">
@@ -970,59 +891,39 @@
                 <span>events loaded</span>
                 <span class="last-update">· Last update: <span id="lastUpdate">—</span></span>
             </div>
-            <div style="display:flex;gap:var(--spacing-sm);">
-                <button class="btn btn-secondary btn-sm" onclick="markAllRead()">
-                    <i class="fas fa-check-double"></i> Mark all read
+            <div style="display:flex; gap:var(--spacing-sm);">
+                <button class="btn-advanced-search" onclick="window.location.href='/dashboard/search.html'" title="Open Advanced Filters Configuration">
+                    <i class="fas fa-sliders-h"></i>  Search
                 </button>
             </div>
         </div>
         
         <div class="feed-workspace-card">
-            
             <div id="feed">
                 <div class="loading-state">
                     <div class="spinner"></div>
                     <p>Loading history...</p>
                 </div>
             </div>
-
-            <div class="pagination-container" id="paginationControls">
-                <button class="btn" id="btnPrev" onclick="changePage('prev')">
-                    <i class="fas fa-chevron-left"></i> Previous
-                </button>
-                <span id="pageIndicator">
-                    Page <span id="currentPageNum">1</span>
-                </span>
-                <button class="btn" id="btnNext" onclick="changePage('next')">
-                    Next <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-
         </div>
     </main>
     
     <div class="toast-container" id="toastContainer"></div>
     
     <script>
-        // =============================================
-        // CONFIGURATION & DOM EVENT LOOPS
-        // =============================================
         const API_BASE = window.location.origin;
-        const WS_URL = 'ws://' + window.location.host + '/ws/live/feed/';
+        const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const WS_URL = WS_PROTOCOL + window.location.host + '/ws/live/feed/';
         
         const feed = document.getElementById('feed');
         const statusText = document.getElementById('statusText');
         const statusDot = document.getElementById('statusDot');
         const countNumber = document.getElementById('countNumber');
         const lastUpdateEl = document.getElementById('lastUpdate');
-        const searchStatus = document.getElementById('search-status');
         
         let eventCount = 0;
-        let isSearchMode = false;
         let ws = null;
-        let allEvents = [];
-        let currentPage = 1;
-        
+                
         function getInitials(name) {
             if (!name) return 'U';
             const parts = name.split(' ');
@@ -1081,7 +982,7 @@
         function createEventCard(data) {
             const appClass = getAppClass(data.integration);
             const initials = getInitials('Lucky Shukla');
-            const user = data.user || extractUser(data.message) || 'Unknown';
+            const user = extractUser(data.message) || 'Unknown';
             const issue = extractIssue(data.message);
             const badgeClass = getBadgeClass(data.event_type);
             const eventIcon = getEventIcon(data.event_type);
@@ -1095,9 +996,6 @@
             
             const card = document.createElement('div');
             card.className = 'event-card';
-            card.dataset.eventType = data.event_type;
-            card.dataset.message = data.message;
-            card.dataset.timestamp = data.timestamp;
             
             card.innerHTML = `
                 <div class="severity-line ${severity}"></div>
@@ -1116,11 +1014,6 @@
                         <span><i class="far fa-clock"></i> ${timeStr}</span>
                         ${data.repo_name ? `<span>· <i class="fas fa-folder"></i> ${data.repo_name}</span>` : ''}
                     </div>
-                </div>
-                <div class="event-actions">
-                    <button onclick="showToast('success', 'Pinned', 'Event pinned to dashboard')" title="Pin"><i class="fas fa-thumbtack"></i></button>
-                    <button onclick="showToast('info', 'Shared', 'Link copied to clipboard')" title="Share"><i class="fas fa-share-alt"></i></button>
-                    <button onclick="showToast('success', 'Marked read', 'Event marked as read')" title="Mark read"><i class="fas fa-check"></i></button>
                 </div>
             `;
             return card;
@@ -1142,16 +1035,17 @@
         
         function displayEvents(events) {
             feed.innerHTML = '';
-            allEvents = events;
+            eventCount = events.length;
             
             if (events.length === 0) {
                 feed.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon"><i class="fas fa-inbox"></i></div>
                         <h3>No events found</h3>
-                        <p>Try adjusting your filters or check back later for new activity.</p>
+                        <p>Check back later for new activity log indexes.</p>
                     </div>
                 `;
+                countNumber.textContent = '0';
                 return;
             }
             
@@ -1167,6 +1061,7 @@
                 feed.appendChild(groupDiv);
             });
             
+            countNumber.textContent = events.length;
             lastUpdateEl.textContent = new Date().toLocaleTimeString();
         }
         
@@ -1175,108 +1070,20 @@
             lastUpdateEl.textContent = new Date().toLocaleTimeString();
         }
         
-        function changePage(direction) {
-            if (direction === 'prev' && currentPage > 1) {
-                currentPage--;
-            } else if (direction === 'next') {
-                currentPage++;
-            }
-            
-            if (isSearchMode) {
-                doSearch(currentPage);
-            } else {
-                loadHistory(currentPage);
-            }
-        }
-
-        function loadHistory(page = 1) {
-            currentPage = page;
+        function loadHistory() {
             feed.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading history...</p></div>`;
-            document.getElementById('paginationControls').style.display = 'none';
-
-            fetch(`${API_BASE}/api/v1/dashboard/history/?page=${page}`)
+            fetch(API_BASE + '/api/v1/dashboard/history/')
                 .then(res => res.json())
                 .then(result => {
-                    document.getElementById('currentPageNum').textContent = currentPage;
-                    
-                    if (result.data && result.data.length > 0) {
-                        displayEvents(result.data);
-                        eventCount = result.count || result.data.length;
-                        countNumber.textContent = eventCount;
-                        
-                        document.getElementById('paginationControls').style.display = 'flex';
-                        document.getElementById('btnPrev').disabled = !result.previous;
-                        document.getElementById('btnNext').disabled = !result.next;
-                    } else {
-                        feed.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-clock"></i></div><h3>No events yet</h3><p>Waiting for live activity...</p></div>`;
-                        countNumber.textContent = '0';
-                    }
+                    if (result.data && result.data.length > 0) displayEvents(result.data);
+                    else feed.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-clock"></i></div><h3>No events yet</h3><p>Waiting for live activity...</p></div>`;
                 })
                 .catch(err => {
-                    feed.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><h3>Could not load history</h3><p>${err.message || 'Please refresh the page'}</p></div>`;
+                    feed.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><h3>Could not load history</h3><p>Ensure backend operations server is online.</p></div>`;
                 });
         }
         
-        function doSearch(page = 1) {
-            currentPage = page;
-            const app = document.getElementById('app-filter').value;
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
-            
-            const params = [];
-            if (app) params.push('application=' + app);
-            if (startDate) params.push('start_date=' + startDate);
-            if (endDate) params.push('end_date=' + endDate);
-            params.push('page=' + currentPage);
-            
-            if (!app && !startDate && !endDate) { clearSearch(); return; }
-            
-            isSearchMode = true;
-            searchStatus.className = 'show';
-            searchStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-            feed.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Searching...</p></div>`;
-            document.getElementById('paginationControls').style.display = 'none';
-            
-            fetch(API_BASE + '/api/v1/dashboard/search/?' + params.join('&'))
-                .then(res => res.json())
-                .then(result => {
-                    if (result.status === 'error') {
-                        searchStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result.message}`;
-                        return;
-                    }
-                    
-                    document.getElementById('currentPageNum').textContent = currentPage;
-                    const totalMatches = result.count || 0;
-                    
-                    searchStatus.innerHTML = `
-                        <i class="fas fa-search"></i> Showing filtered stream (${totalMatches} total entries found)
-                        <button onclick="clearSearch()" style="margin-left:auto;background:none;border:none;color:var(--color-primary);cursor:pointer;font-weight:600;"><i class="fas fa-times"></i> Clear</button>
-                    `;
-                    
-                    displayEvents(result.data || []);
-                    countNumber.textContent = result.data ? result.data.length : 0;
-
-                    if (result.data && result.data.length > 0) {
-                        document.getElementById('paginationControls').style.display = 'flex';
-                        document.getElementById('btnPrev').disabled = !result.previous;
-                        document.getElementById('btnNext').disabled = !result.next;
-                    }
-                })
-                .catch(() => { searchStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Search request execution failed.`; });
-        }
-        
-        function clearSearch() {
-            document.getElementById('app-filter').value = '';
-            document.getElementById('start-date').value = '';
-            document.getElementById('end-date').value = '';
-            isSearchMode = false;
-            searchStatus.className = '';
-            searchStatus.innerHTML = '';
-            loadHistory(1);
-        }
-        
-        function saveView() { showToast('success', 'View Saved', 'Your filter logs view parameters have been saved'); }
-        function markAllRead() { showToast('success', 'All Read', 'All loaded event triggers verified as read'); }
+        function markAllRead() { showToast('success', 'All Read', 'All dashboard event indicators updated.'); }
         
         function showToast(type, title, message) {
             const container = document.getElementById('toastContainer');
@@ -1303,25 +1110,20 @@
                 ws.onmessage = (e) => {
                     try {
                         const data = JSON.parse(e.data);
-                        if (!isSearchMode && currentPage === 1) {
-                            const emptyState = feed.querySelector('.empty-state');
-                            if (emptyState) emptyState.remove();
-                            let todayGroup = feed.querySelector('.date-group:first-child');
-                            if (!todayGroup || !todayGroup.innerHTML.includes('Today')) {
-                                todayGroup = document.createElement('div'); todayGroup.className = 'date-group';
-                                todayGroup.innerHTML = '<div class="date-label"><i class="far fa-calendar-alt"></i> Today</div>';
-                                feed.insertBefore(todayGroup, feed.firstChild);
-                            }
-                            todayGroup.insertBefore(createEventCard(data), todayGroup.children[1] || null);
-                            eventCount++; updateCounter();
-                            showToast('info', 'New Event', (data.message || '').substring(0, 50));
+                        let todayGroup = feed.querySelector('.date-group:first-child');
+                        if (!todayGroup) {
+                            todayGroup = document.createElement('div'); todayGroup.className = 'date-group';
+                            todayGroup.innerHTML = '<div class="date-label"><i class="far fa-calendar-alt"></i> Today</div>';
+                            feed.insertBefore(todayGroup, feed.firstChild);
                         }
+                        todayGroup.insertBefore(createEventCard(data), todayGroup.children[1] || null);
+                        eventCount++; updateCounter();
                     } catch(err) { console.error(err); }
                 };
             } catch (err) { console.error(err); }
         }
-        
-        loadHistory(1);
+
+        loadHistory();
         setTimeout(connectWebSocket, 500);
     </script>
 </body>

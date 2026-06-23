@@ -23,4 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/v1/", include("monitor.urls")),
     path("dashboard/", TemplateView.as_view(template_name="dashboard.html"), name="dashboard"),
+    path("dashboard/search.html", TemplateView.as_view(template_name="search.html"), name="advanced-search"),
 ]

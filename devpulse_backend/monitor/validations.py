@@ -176,8 +176,8 @@ def get_event_types_for_app(raw_app_name):
             "SLACK_REACTION", "SLACK_CHANNEL_CREATED",
         ],
         "jira": [
-            "JIRA_ISSUE_CREATED", "JIRA_ISSUE_UPDATED",
-            "JIRA_COMMENT_CREATED",
+            "JIRA_ISSUE_CREATED", "JIRA_ISSUE_UPDATED","JIRA_ISSUE_DELETED",
+            "JIRA_COMMENT_CREATED","JIRA_COMMENT_DELETED",
         ],
     }
 

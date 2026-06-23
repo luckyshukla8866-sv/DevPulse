@@ -308,10 +308,10 @@ class JiraWebhookView(APIView):
             # --- Read the Jira event type ---
             # Jira sends the event name in a field called "webhookEvent"
             webhook_event = request.data.get("webhookEvent", "unknown")
-            print("******step2*****")
+     
             # --- Translate Jira's format to our format ---
             event_type, severity, message = self.parse_jira_event(webhook_event, request.data)
-            print("******step3*****")
+      
             # --- Save to database ---
             payload = dict(request.data)
             payload["message"] = message

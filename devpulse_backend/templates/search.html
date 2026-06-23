@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search & Filter · DevPulse</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --color-primary: #6366F1;
+            --color-primary-light: #818CF8;
+            --color-primary-dark: #4F46E5;
+            --color-primary-bg: #EEF2FF;
+            --color-bg: #F8FAFC;
+            --color-card: #FFFFFF;
+            --color-border: #E2E8F0;
+            --color-border-hover: #CBD5E1;
+            --color-text-primary: #0F172A;
+            --color-text-secondary: #475569;
+            --color-text-muted: #94A3B8;
+            
+            --color-success: #22C55E;
+            --color-warning: #F59E0B;
+            --color-info: #3B82F6;
+            --color-danger: #EF4444;
+            
+            --font-family: 'Inter', sans-serif;
+            --font-size-h2: 20px;
+            --font-size-base: 14px;
+            --font-size-small: 13px;
+            --font-size-tiny: 11px;
+            
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --transition-fast: 150ms ease;
+            --header-height: 70px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            line-height: 1.5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .search-header {
+            height: var(--header-height);
+            background: var(--color-card);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-xl);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            font-size: var(--font-size-h2);
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: color var(--transition-fast);
+            margin-right: var(--spacing-xs);
+        }
+
+        .btn-close:hover { color: var(--color-primary); }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: var(--font-size-small);
+        }
+
+        .search-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .filter-panel {
+            width: 450px;
+            background: var(--color-card);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .filter-content {
+            padding: var(--spacing-xl);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xl);
+            overflow-y: auto;
+        }
+
+        .filter-section-title {
+            font-size: var(--font-size-tiny);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-md);
+        }
+        
+        .app-card {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md) var(--spacing-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--color-text-secondary);
+            background: var(--color-card);
+        }
+
+        .app-card.active {
+            border-color: var(--color-primary);
+            background: var(--color-primary-bg);
+            color: var(--color-primary-dark);
+        }
+
+        .app-card i { font-size: 22px; }
+        .app-card .app-name { font-size: var(--font-size-small); font-weight: 500; }
+
+        .pill-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .pill {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            font-size: var(--font-size-small);
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: var(--color-card);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .pill.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .date-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .date-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .date-input-wrapper label {
+            font-size: var(--font-size-tiny);
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
+
+        .date-input-wrapper input {
+            padding: 10px var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            color: var(--color-text-primary);
+            outline: none;
+            width: 100%;
+        }
+
+        .action-panel {
+            padding: var(--spacing-xl);
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: var(--spacing-md);
+            background: var(--color-card);
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .btn-outline {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+        }
+        .btn-outline:hover { background: var(--color-bg); }
+
+        .btn-primary {
+            background: var(--color-primary);
+            border: none;
+            color: white;
+        }
+        .btn-primary:hover { background: var(--color-primary-dark); }
+
+        /* Results Display Panel */
+        .results-panel {
+            flex: 1;
+            background: var(--color-bg);
+            padding: var(--spacing-xl);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-header {
+            font-size: var(--font-size-small);
+            font-weight: 700;
+            color: var(--color-text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: var(--spacing-lg);
+            flex-shrink: 0;
+        }
+
+        #feed { flex: 1; display: flex; flex-direction: column; gap: var(--spacing-md); }
+        
+        .date-group { margin-top: var(--spacing-lg); }
+        .date-group:first-child { margin-top: 0; }
+        .date-group .date-label {
+            font-size: var(--font-size-small);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 2px solid var(--color-border);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        /* Event Cards Architecture */
+        .event-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            position: relative;
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: flex-start;
+            box-shadow: var(--shadow-sm);
+        }
+        .severity-line {
+            position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0;
+        }
+        .severity-line.INFO { background: var(--color-info); }
+        .severity-line.WARNING { background: var(--color-warning); }
+        .severity-line.CRITICAL { background: var(--color-danger); }
+        .severity-line.SUCCESS { background: var(--color-success); }
+
+        .event-avatar {
+            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 15px; flex-shrink: 0; color: white;
+        }
+        .event-avatar.github { background: #24292F; }
+        .event-avatar.jira { background: #0052CC; }
+        .event-avatar.slack { background: #4A154B; }
+        .event-avatar.aws { background: #FF9900; color: #232F3E; }
+        .event-avatar.default { background: var(--color-primary); }
+        
+        .event-content { flex: 1; min-width: 0; }
+        .event-header { display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs); flex-wrap: wrap; }
+        .event-type { font-size: var(--font-size-small); font-weight: 600; color: var(--color-text-secondary); }
+        
+        .source-tag {
+            display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 12px;
+            font-size: var(--font-size-tiny); font-weight: 600; text-transform: uppercase;
+        }
+        .source-tag.github { background: #F6F8FA; color: #24292F; }
+        .source-tag.jira { background: #E6F0FF; color: #0052CC; }
+        .source-tag.slack { background: #F5EEF9; color: #4A154B; }
+        .source-tag.aws { background: #FFF3E6; color: #FF9900; }
+
+        .badge { padding: 2px 10px; border-radius: 12px; font-size: var(--font-size-tiny); font-weight: 600; text-transform: uppercase; }
+        .badge.created { background: #DCFCE7; color: #16A34A; }
+        .badge.updated { background: #FEF3C7; color: #D97706; }
+        .badge.deleted { background: #FEE2E2; color: #DC2626; }
+        
+        .event-message { font-size: var(--font-size-base); color: var(--color-text-secondary); margin-bottom: var(--spacing-xs); }
+        .event-meta { display: flex; align-items: center; gap: var(--spacing-md); font-size: var(--font-size-small); color: var(--color-text-muted); }
+
+        /* Pagination Integration */
+        .pagination-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: auto; padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);
+        }
+        .pagination-container .page-btn {
+            padding: 8px 16px; background: var(--color-card); border: 1px solid var(--color-border);
+            color: var(--color-text-secondary); font-size: var(--font-size-small); font-weight: 500;
+            border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast);
+        }
+        .pagination-container .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-container .page-btn:not(:disabled):hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            flex: 1; color: var(--color-text-muted); text-align: center;
+        }
+        .empty-state i { font-size: 54px; margin-bottom: var(--spacing-md); color: var(--color-border-hover); }
+        .empty-state h3 { color: var(--color-text-secondary); font-size: 18px; margin-bottom: var(--spacing-xs); }
+    </style>
+</head>
+<body>
+
+    <header class="search-header">
+        <div class="header-title">
+            <button class="btn-close" onclick="window.location.href='/dashboard/'"><i class="fas fa-arrow-left"></i></button>
+            Search & Filter
+        </div>
+        <div class="avatar">LS</div>
+    </header>
+
+    <main class="search-layout">
+        <aside class="filter-panel">
+            <div class="filter-content">
+                
+                <div class="filter-group">
+                    <div class="filter-section-title">Application</div>
+                    <div class="app-grid">
+                        <div class="app-card" data-app="jira" onclick="selectApp(this)">
+                            <i class="fab fa-jira" style="color: #0052CC"></i>
+                            <span class="app-name">Jira</span>
+                        </div>
+                        <div class="app-card" data-app="slack" onclick="selectApp(this)">
+                            <i class="fab fa-slack" style="color: #4A154B"></i>
+                            <span class="app-name">Slack</span>
+                        </div>
+                        <div class="app-card" data-app="github" onclick="selectApp(this)">
+                            <i class="fab fa-github" style="color: #24292F"></i>
+                            <span class="app-name">GitHub</span>
+                        </div>
+                        <div class="app-card" data-app="aws" onclick="selectApp(this)">
+                            <i class="fas fa-cloud" style="color: #FF9900"></i>
+                            <span class="app-name">AWS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-section-title">Event Type</div>
+                    <div class="pill-container" id="eventPillContainer">
+                        <div class="pill active" onclick="selectEventPill(this, '')">All Events</div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-section-title">Date Range</div>
+                    <div class="date-grid">
+                        <div class="date-input-wrapper">
+                            <label>From</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        <div class="date-input-wrapper">
+                            <label>To</label>
+                            <input type="date" id="endDate">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="action-panel">
+                <button class="btn btn-outline" onclick="resetSearchForm()">CLEAR</button>
+                <button class="btn btn-primary" onclick="executeSearch(1)">
+                    <i class="fas fa-sliders-h"></i> APPLY FILTERS
+                </button>
+            </div>
+        </aside>
+
+        <section class="results-panel">
+            <div class="results-header" id="resultsHeader">ALL ACTIVITIES</div>
+            
+            <div id="feed">
+                <div class="empty-state">
+                    <i class="fas fa-search-plus"></i>
+                    <h3>Ready to search</h3>
+                    <p>Select filter parameters on the left side menu to find log activity details.</p>
+                </div>
+            </div>
+            
+            <div class="pagination-container" id="paginationBlock" style="display: none;">
+                <button class="page-btn" id="prevBtn" onclick="navigatePage('prev')">Previous</button>
+                <span id="pageIndicator" style="font-size:var(--font-size-small); color:var(--color-text-secondary);">Page 1</span>
+                <button class="page-btn" id="nextBtn" onclick="navigatePage('next')">Next</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let activeApp = '';
+        let activeEventType = '';
+        let currentPageIndex = 1;
+
+        // Front-end definition matching your APP_MAP backend matrix
+        const EVENT_MAP = {
+            "github": ["CODE_PUSH", "PULL_REQUEST_OPENED", "PULL_REQUEST_CLOSED", "PULL_REQUEST_MERGED", "ISSUE_OPENED", "ISSUE_CLOSED", "REPO_STARRED"],
+            "slack": ["SLACK_MESSAGE", "SLACK_MEMBER_JOINED", "SLACK_REACTION", "SLACK_CHANNEL_CREATED"],
+            "jira": ["JIRA_ISSUE_CREATED", "JIRA_ISSUE_UPDATED", "JIRA_ISSUE_DELETED", "JIRA_COMMENT_CREATED", "JIRA_COMMENT_DELETED"]
+        };
+
+        function selectApp(element) {
+            if (element.classList.contains('active')) {
+                element.classList.remove('active');
+                activeApp = '';
+            } else {
+                document.querySelectorAll('.app-card').forEach(el => el.classList.remove('active'));
+                element.classList.add('active');
+                activeApp = element.dataset.app;
+            }
+            activeEventType = ''; // Reset chosen sub-type on application swap
+            renderEventPills();
+        }
+
+        function renderEventPills() {
+            const container = document.getElementById('eventPillContainer');
+            container.innerHTML = `<div class="pill ${!activeEventType ? 'active' : ''}" onclick="selectEventPill(this, '')">All Events</div>`;
+            
+            if (activeApp && EVENT_MAP[activeApp]) {
+                EVENT_MAP[activeApp].forEach(type => {
+                    const cleanLabel = type.replace(/_/g, ' ').toLowerCase();
+                    const isSelected = activeEventType === type;
+                    container.innerHTML += `
+                        <div class="pill ${isSelected ? 'active' : ''}" style="text-transform: capitalize;" onclick="selectEventPill(this, '${type}')">
+                            ${cleanLabel}
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function selectEventPill(element, eventType) {
+            document.querySelectorAll('#eventPillContainer .pill').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            activeEventType = eventType;
+        }
+
+        function resetSearchForm() {
+            activeApp = '';
+            activeEventType = '';
+            document.querySelectorAll('.app-card').forEach(el => el.classList.remove('active'));
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            renderEventPills();
+            document.getElementById('paginationBlock').style.display = 'none';
+            document.getElementById('resultsHeader').textContent = 'ALL ACTIVITIES';
+            document.getElementById('feed').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-search-plus"></i>
+                    <h3>Ready to search</h3>
+                    <p>Select filter parameters on the left side menu to find log activity details.</p>
+                </div>
+            `;
+        }
+
+        function executeSearch(page = 1) {
+            currentPageIndex = page;
+            const startVal = document.getElementById('startDate').value;
+            const endVal = document.getElementById('endDate').value;
+            const targetContainer = document.getElementById('feed');
+            
+            let queryParams = [`page=${page}`];
+            if (activeApp) queryParams.push(`application=${activeApp}`);
+            if (activeEventType) queryParams.push(`event_type=${activeEventType}`);
+            if (startVal) queryParams.push(`start_date=${startVal}`);
+            if (endVal) queryParams.push(`end_date=${endVal}`);
+
+            targetContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-circle-notch fa-spin" style="color:var(--color-primary)"></i>
+                    <h3>Querying database...</h3>
+                </div>
+            `;
+
+            fetch(`${API_BASE}/api/v1/dashboard/search/?${queryParams.join('&')}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Search constraint validation failed');
+                    return res.json();
+                })
+                .then(payload => {
+                    let headerText = 'ALL ACTIVITIES';
+                    if (activeApp) headerText = `ACTIVITIES: ${activeApp.toUpperCase()}`;
+                    if (activeEventType) headerText += ` (${activeEventType})`;
+                    document.getElementById('resultsHeader').textContent = headerText;
+                    
+                    if (!payload.data || payload.data.length === 0) {
+                        targetContainer.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open"></i>
+                                <h3>No operations logs found</h3>
+                                <p>No match logs parsed for constraints setup targets.</p>
+                            </div>
+                        `;
+                        document.getElementById('paginationBlock').style.display = 'none';
+                        return;
+                    }
+
+                    renderResponseStream(payload.data, targetContainer);
+                    evaluatePaginationControls(payload);
+                })
+                .catch(err => {
+                    targetContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle" style="color:var(--color-danger)"></i>
+                            <h3>Search Endpoint Unreachable</h3>
+                            <p>Verify backend service is active on port 8000.</p>
+                        </div>
+                    `;
+                    document.getElementById('paginationBlock').style.display = 'none';
+                });
+        }
+
+        function renderResponseStream(logs, container) {
+            container.innerHTML = '';
+            const grouped = bucketDates(logs);
+            const chronologicalKeys = Object.keys(grouped);
+            
+            chronologicalKeys.forEach(key => {
+                const groupSection = document.createElement('div');
+                groupSection.className = 'date-group';
+                groupSection.innerHTML = `<div class="date-label"><i class="far fa-calendar-alt"></i> ${key}</div>`;
+                
+                grouped[key].forEach(log => {
+                    groupSection.appendChild(compileLogCard(log));
+                });
+                container.appendChild(groupSection);
+            });
+        }
+
+        function bucketDates(logs) {
+            const bucket = {};
+            logs.forEach(item => {
+                const dateObj = new Date(item.timestamp);
+                const keyLabel = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                if (!bucket[keyLabel]) bucket[keyLabel] = [];
+                bucket[keyLabel].push(item);
+            });
+            return bucket;
+        }
+
+        function compileLogCard(log) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'event-card';
+            const applicationClass = (log.integration || '').toLowerCase();
+            const timeFormatted = new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            let actionBadgeStyle = 'updated';
+            if (log.event_type.toLowerCase().includes('create')) actionBadgeStyle = 'created';
+            if (log.event_type.toLowerCase().includes('delete')) actionBadgeStyle = 'deleted';
+
+            wrapper.innerHTML = `
+                <div class="severity-line ${log.severity || 'INFO'}"></div>
+                <div class="event-avatar ${applicationClass}">${(log.integration || 'UN')[0].toUpperCase()}</div>
+                <div class="event-content">
+                    <div class="event-header">
+                        <span class="event-type">${log.event_type}</span>
+                        <span class="source-tag ${applicationClass}">${log.integration}</span>
+                        <span class="badge ${actionBadgeStyle}">${log.severity}</span>
+                    </div>
+                    <div class="event-message">${log.message}</div>
+                    <div class="event-meta">
+                        <span><i class="far fa-clock"></i> ${timeFormatted}</span>
+                        <span>·</span>
+                        <span><i class="fas fa-folder"></i> ${log.repo_name}</span>
+                    </div>
+                </div>
+            `;
+            return wrapper;
+        }
+
+        function evaluatePaginationControls(payload) {
+            const container = document.getElementById('paginationBlock');
+            container.style.display = 'flex';
+            document.getElementById('pageIndicator').textContent = `Page ${currentPageIndex}`;
+            
+            document.getElementById('prevBtn').disabled = !payload.previous;
+            document.getElementById('nextBtn').disabled = !payload.next;
+        }
+
+        function navigatePage(direction) {
+            if (direction === 'prev') executeSearch(currentPageIndex - 1);
+            else executeSearch(currentPageIndex + 1);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const appParam = urlParams.get('application');
+            const startParam = urlParams.get('start_date');
+            const endParam = urlParams.get('end_date');
+
+            if (appParam) {
+                const appCard = document.querySelector(`.app-card[data-app="${appParam.toLowerCase()}"]`);
+                if (appCard) selectApp(appCard);
+            }
+            if (startParam) document.getElementById('startDate').value = startParam;
+            if (endParam) document.getElementById('endDate').value = endParam;
+
+            if (appParam || startParam || endParam) {
+                executeSearch(1);
+            }
+        });
+    </script>
+</body>
+</html>

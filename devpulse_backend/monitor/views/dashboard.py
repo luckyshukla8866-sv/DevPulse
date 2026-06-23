@@ -261,6 +261,7 @@ class DashboardSearchView(APIView):
             # 1. Read filters from URL query params 
             raw_app = request.query_params.get("application")
             raw_start = request.query_params.get("start_date")
+            raw_event_type = request.query_params.get("event_type")
             raw_end = request.query_params.get("end_date")
 
             # 2. Validate application name
@@ -283,6 +284,8 @@ class DashboardSearchView(APIView):
             logs = ActivityLog.objects.select_related("integration").order_by("-created_at")
 
             # 5. Filter by application (event types)
+            if raw_event_type:
+                logs = logs.filter(event_type=raw_event_type)   
             if app_result is not None:
                 logs = logs.filter(event_type__in=app_result)
 
